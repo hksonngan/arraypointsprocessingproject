@@ -20,22 +20,22 @@
 struct PointArray 
 {
     short* data; //Плотность в точке<br>
-    int sizeX; //размер по х
-    int sizeY;
-    int sizeZ;
-    int scaleX;
-    int scaleY;
-    int scaleZ;
+    int sizeX; //размер по х<br>
+    int sizeY;<br>
+    int sizeZ;<br>
+    int scaleX;<br>
+    int scaleY;<br>
+    int scaleZ;<br>
 };
 
 //слой плотностей (x*y плоскость), размер слоя - sizeX * sizeY
 struct Layer
 {
-    Layer(): data(NULL), sizeX(0), sizeY(0) {}
-    Layer(short* density, int x, int y): data(density), sizeX(x), sizeY(y) {}
-    short* data; //указатель на начало слоя
-    int sizeX; //размер по х
-    int sizeY; //размер по х
+    Layer(): data(NULL), sizeX(0), sizeY(0) {}<br>
+    Layer(short* density, int x, int y): data(density), sizeX(x), sizeY(y) {}<br>
+    short* data; //указатель на начало слоя<br>
+    int sizeX; //размер по х<br>
+    int sizeY; //размер по y<br>
 };
 
 = методы работы с данными =
