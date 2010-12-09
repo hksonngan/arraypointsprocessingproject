@@ -19,7 +19,7 @@
 //все исходные данные<br>
 struct PointArray 
 {
-    short* data; //Плотность в точке
+    short* data; //Плотность в точке<br>
     int sizeX; //размер по х
     int sizeY;
     int sizeZ;
