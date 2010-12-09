@@ -1,0 +1,56 @@
+#Структура данных 3d массивов
+
+= Что хранится в бинарных исходных файлах MRI =
+
+1) размер массива по X (int) количество точек в трехмерной матрице
+2) размер массива по Y (int) ...
+3) размер массива по Z (int) ...
+
+4) размер воксела по X (float) ??? 
+5) размер воксела по Y (float)
+6) размер воксела по Z (float)
+
+7) 3д массив, т.е. size.x * size.y * size.z чисел (short) - Это плотность в точке.
+Таким образом нам дана обычная трехмерная матрица засунута в бинарный файл по строчно, координаты изменяются от 0 до sizeX(пункт 1) для координаты x и т.д. 
+Т.е. мы имеем обычную функцию от трех переменных, при отображение это значение цвета(оттенок серого) в точке. Координаты это int изменяющиеся от 0 до sizeX.
+
+= Структура данных в программе =
+
+//все исходные данные
+struct PointArray 
+{
+    short* data; //Плотность в точке
+    int sizeX; //размер по х
+    int sizeY;
+    int sizeZ;
+    int scaleX;
+    int scaleY;
+    int scaleZ;
+};
+
+//слой плотностей (x*y плоскость), размер слоя - sizeX * sizeY
+struct Layer
+{
+    Layer(): data(NULL), sizeX(0), sizeY(0) {}
+    Layer(short* density, int x, int y): data(density), sizeX(x), sizeY(y) {}
+    short* data; //указатель на начало слоя
+    int sizeX; //размер по х
+    int sizeY; //размер по х
+};
+
+= методы работы с данными =
+//загрузка данных из файла nameFile
+void LoadArray(PointArray& pointArray, const char* nameFile)
+
+//уничтожение исходных данных
+void DestroyArray(PointArray& pointArray)
+
+
+//возвращает слой с координатой z(измняется от 0 до sizeZ)
+Layer GetLayer(PointArray& pointArray, int z)
+
+//возвращает плотность в точке слоя с координатами  x(измняется от 0 до sizeX), y(измняется от 0 до sizeY)
+short GetDensity(Layer& layer, int x, int y)
+
+//возвращает плотность в точке пространства с координатами  x(измняется от 0 до sizeX), y(измняется от 0 до sizeY), z(измняется от 0 до sizeZ)
+short GetDensity(PointArray& pointArray, int x, int y, int z)
