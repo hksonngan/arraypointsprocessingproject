@@ -5,6 +5,9 @@
 #include <gl/GLu.h>
 
 #include "graphics.h"
+#include "ScanData.h"
+
+#include <stdio.h>
 
 #pragma comment (lib,"opengl32.lib")
 #pragma comment (lib,"glu32.lib")
@@ -59,10 +62,20 @@ namespace surface_reconstruction {
                 delete components;
             }
         }
-    private: System::Windows::Forms::Button^  button1;
-    private: System::Windows::Forms::Label^  StatusLabel;
+    private: System::Windows::Forms::Button^  buttonOpenFile;
     protected: 
 
+    protected: 
+
+    protected: 
+
+    protected: 
+
+    private: System::Windows::Forms::Label^  labelStatus;
+    protected: 
+
+    public:
+        ScanData *data;
 
     private:
         /// <summary>
@@ -72,9 +85,29 @@ namespace surface_reconstruction {
         HGLRC   hRC;
         HWND    hWnd;
     private: System::Windows::Forms::Panel^  GLWindow;
-    private: System::Windows::Forms::GroupBox^  groupBox1;
+    private: System::Windows::Forms::GroupBox^  groupBoxRender;
+    private: System::Windows::Forms::Timer^  timerDraw;
+    private: System::Windows::Forms::OpenFileDialog^  openDataDialog;
 
-    private: System::Windows::Forms::Timer^  DrawTimer;
+
+
+
+
+    private: System::Windows::Forms::GroupBox^  groupBoxLoadData;
+    private: System::Windows::Forms::Button^  buttonLoadData;
+
+    private: System::Windows::Forms::TextBox^  textBoxInputFile;
+    private: System::Windows::Forms::Label^  labelDataFileName;
+    private: System::Windows::Forms::Label^  labelVoxelZ;
+    private: System::Windows::Forms::Label^  labelVoxelY;
+    private: System::Windows::Forms::Label^  labelVoxelX;
+    private: System::Windows::Forms::Label^  labelLayerNum;
+    private: System::Windows::Forms::Label^  labelLayerHeight;
+    private: System::Windows::Forms::Label^  labelLayerWidth;
+
+
+
+
     private: System::ComponentModel::IContainer^  components;
 
 
@@ -87,34 +120,45 @@ namespace surface_reconstruction {
              void InitializeComponent(void)
              {
                  this->components = (gcnew System::ComponentModel::Container());
-                 this->button1 = (gcnew System::Windows::Forms::Button());
-                 this->StatusLabel = (gcnew System::Windows::Forms::Label());
+                 this->buttonOpenFile = (gcnew System::Windows::Forms::Button());
+                 this->labelStatus = (gcnew System::Windows::Forms::Label());
                  this->GLWindow = (gcnew System::Windows::Forms::Panel());
-                 this->groupBox1 = (gcnew System::Windows::Forms::GroupBox());
-                 this->DrawTimer = (gcnew System::Windows::Forms::Timer(this->components));
-                 this->groupBox1->SuspendLayout();
+                 this->groupBoxRender = (gcnew System::Windows::Forms::GroupBox());
+                 this->timerDraw = (gcnew System::Windows::Forms::Timer(this->components));
+                 this->openDataDialog = (gcnew System::Windows::Forms::OpenFileDialog());
+                 this->groupBoxLoadData = (gcnew System::Windows::Forms::GroupBox());
+                 this->labelVoxelZ = (gcnew System::Windows::Forms::Label());
+                 this->labelVoxelY = (gcnew System::Windows::Forms::Label());
+                 this->labelVoxelX = (gcnew System::Windows::Forms::Label());
+                 this->labelLayerNum = (gcnew System::Windows::Forms::Label());
+                 this->labelLayerHeight = (gcnew System::Windows::Forms::Label());
+                 this->labelLayerWidth = (gcnew System::Windows::Forms::Label());
+                 this->labelDataFileName = (gcnew System::Windows::Forms::Label());
+                 this->buttonLoadData = (gcnew System::Windows::Forms::Button());
+                 this->textBoxInputFile = (gcnew System::Windows::Forms::TextBox());
+                 this->groupBoxRender->SuspendLayout();
+                 this->groupBoxLoadData->SuspendLayout();
                  this->SuspendLayout();
                  // 
-                 // button1
+                 // buttonOpenFile
                  // 
-                 this->button1->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
-                 this->button1->Location = System::Drawing::Point(523, 12);
-                 this->button1->Name = L"button1";
-                 this->button1->Size = System::Drawing::Size(97, 30);
-                 this->button1->TabIndex = 0;
-                 this->button1->Text = L"button1";
-                 this->button1->UseVisualStyleBackColor = true;
-                 this->button1->Click += gcnew System::EventHandler(this, &MainForm::button1_Click);
+                 this->buttonOpenFile->Location = System::Drawing::Point(6, 46);
+                 this->buttonOpenFile->Name = L"buttonOpenFile";
+                 this->buttonOpenFile->Size = System::Drawing::Size(104, 21);
+                 this->buttonOpenFile->TabIndex = 0;
+                 this->buttonOpenFile->Text = L"Открыть";
+                 this->buttonOpenFile->UseVisualStyleBackColor = true;
+                 this->buttonOpenFile->Click += gcnew System::EventHandler(this, &MainForm::button1_Click);
                  // 
-                 // StatusLabel
+                 // labelStatus
                  // 
-                 this->StatusLabel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left));
-                 this->StatusLabel->AutoSize = true;
-                 this->StatusLabel->Location = System::Drawing::Point(12, 420);
-                 this->StatusLabel->Name = L"StatusLabel";
-                 this->StatusLabel->Size = System::Drawing::Size(41, 13);
-                 this->StatusLabel->TabIndex = 1;
-                 this->StatusLabel->Text = L"Статус";
+                 this->labelStatus->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left));
+                 this->labelStatus->AutoSize = true;
+                 this->labelStatus->Location = System::Drawing::Point(3, 438);
+                 this->labelStatus->Name = L"labelStatus";
+                 this->labelStatus->Size = System::Drawing::Size(41, 13);
+                 this->labelStatus->TabIndex = 1;
+                 this->labelStatus->Text = L"Статус";
                  // 
                  // GLWindow
                  // 
@@ -123,50 +167,161 @@ namespace surface_reconstruction {
                      | System::Windows::Forms::AnchorStyles::Right));
                  this->GLWindow->Location = System::Drawing::Point(6, 19);
                  this->GLWindow->Name = L"GLWindow";
-                 this->GLWindow->Size = System::Drawing::Size(499, 387);
+                 this->GLWindow->Size = System::Drawing::Size(499, 406);
                  this->GLWindow->TabIndex = 2;
                  // 
-                 // groupBox1
+                 // groupBoxRender
                  // 
-                 this->groupBox1->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
+                 this->groupBoxRender->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
                      | System::Windows::Forms::AnchorStyles::Left) 
                      | System::Windows::Forms::AnchorStyles::Right));
-                 this->groupBox1->Controls->Add(this->GLWindow);
-                 this->groupBox1->Location = System::Drawing::Point(6, 4);
-                 this->groupBox1->Name = L"groupBox1";
-                 this->groupBox1->Size = System::Drawing::Size(511, 412);
-                 this->groupBox1->TabIndex = 3;
-                 this->groupBox1->TabStop = false;
-                 this->groupBox1->Text = L"Окно демонстрации";
+                 this->groupBoxRender->Controls->Add(this->GLWindow);
+                 this->groupBoxRender->Location = System::Drawing::Point(6, 4);
+                 this->groupBoxRender->Name = L"groupBoxRender";
+                 this->groupBoxRender->Size = System::Drawing::Size(511, 431);
+                 this->groupBoxRender->TabIndex = 3;
+                 this->groupBoxRender->TabStop = false;
+                 this->groupBoxRender->Text = L"Окно демонстрации";
                  // 
-                 // DrawTimer
+                 // timerDraw
                  // 
-                 this->DrawTimer->Enabled = true;
-                 this->DrawTimer->Interval = 30;
-                 this->DrawTimer->Tick += gcnew System::EventHandler(this, &MainForm::DrawTimer_Tick);
+                 this->timerDraw->Enabled = true;
+                 this->timerDraw->Interval = 30;
+                 this->timerDraw->Tick += gcnew System::EventHandler(this, &MainForm::DrawTimer_Tick);
+                 // 
+                 // openDataDialog
+                 // 
+                 this->openDataDialog->FileName = L"*.bin";
+                 this->openDataDialog->Filter = L"Bin files(*.bin)|*.bin|All Files(*.*)|*.*";
+                 this->openDataDialog->Title = L"Open an Existing Document";
+                 // 
+                 // groupBoxLoadData
+                 // 
+                 this->groupBoxLoadData->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
+                 this->groupBoxLoadData->Controls->Add(this->labelVoxelZ);
+                 this->groupBoxLoadData->Controls->Add(this->labelVoxelY);
+                 this->groupBoxLoadData->Controls->Add(this->labelVoxelX);
+                 this->groupBoxLoadData->Controls->Add(this->labelLayerNum);
+                 this->groupBoxLoadData->Controls->Add(this->labelLayerHeight);
+                 this->groupBoxLoadData->Controls->Add(this->labelLayerWidth);
+                 this->groupBoxLoadData->Controls->Add(this->labelDataFileName);
+                 this->groupBoxLoadData->Controls->Add(this->buttonLoadData);
+                 this->groupBoxLoadData->Controls->Add(this->textBoxInputFile);
+                 this->groupBoxLoadData->Controls->Add(this->buttonOpenFile);
+                 this->groupBoxLoadData->Location = System::Drawing::Point(523, 4);
+                 this->groupBoxLoadData->Name = L"groupBoxLoadData";
+                 this->groupBoxLoadData->Size = System::Drawing::Size(217, 133);
+                 this->groupBoxLoadData->TabIndex = 5;
+                 this->groupBoxLoadData->TabStop = false;
+                 this->groupBoxLoadData->Text = L"Данные";
+                 // 
+                 // labelVoxelZ
+                 // 
+                 this->labelVoxelZ->AutoSize = true;
+                 this->labelVoxelZ->Location = System::Drawing::Point(111, 109);
+                 this->labelVoxelZ->Name = L"labelVoxelZ";
+                 this->labelVoxelZ->Size = System::Drawing::Size(74, 13);
+                 this->labelVoxelZ->TabIndex = 9;
+                 this->labelVoxelZ->Text = L"Размер по Z:";
+                 // 
+                 // labelVoxelY
+                 // 
+                 this->labelVoxelY->AutoSize = true;
+                 this->labelVoxelY->Location = System::Drawing::Point(111, 96);
+                 this->labelVoxelY->Name = L"labelVoxelY";
+                 this->labelVoxelY->Size = System::Drawing::Size(74, 13);
+                 this->labelVoxelY->TabIndex = 8;
+                 this->labelVoxelY->Text = L"Размер по Y:";
+                 // 
+                 // labelVoxelX
+                 // 
+                 this->labelVoxelX->AutoSize = true;
+                 this->labelVoxelX->Location = System::Drawing::Point(111, 83);
+                 this->labelVoxelX->Name = L"labelVoxelX";
+                 this->labelVoxelX->Size = System::Drawing::Size(74, 13);
+                 this->labelVoxelX->TabIndex = 7;
+                 this->labelVoxelX->Text = L"Размер по X:";
+                 // 
+                 // labelLayerNum
+                 // 
+                 this->labelLayerNum->AutoSize = true;
+                 this->labelLayerNum->Location = System::Drawing::Point(2, 109);
+                 this->labelLayerNum->Name = L"labelLayerNum";
+                 this->labelLayerNum->Size = System::Drawing::Size(77, 13);
+                 this->labelLayerNum->TabIndex = 6;
+                 this->labelLayerNum->Text = L"Кол-во слоев:";
+                 // 
+                 // labelLayerHeight
+                 // 
+                 this->labelLayerHeight->AutoSize = true;
+                 this->labelLayerHeight->Location = System::Drawing::Point(2, 96);
+                 this->labelLayerHeight->Name = L"labelLayerHeight";
+                 this->labelLayerHeight->Size = System::Drawing::Size(75, 13);
+                 this->labelLayerHeight->TabIndex = 5;
+                 this->labelLayerHeight->Text = L"Высота слоя:";
+                 // 
+                 // labelLayerWidth
+                 // 
+                 this->labelLayerWidth->AutoSize = true;
+                 this->labelLayerWidth->Location = System::Drawing::Point(2, 83);
+                 this->labelLayerWidth->Name = L"labelLayerWidth";
+                 this->labelLayerWidth->Size = System::Drawing::Size(76, 13);
+                 this->labelLayerWidth->TabIndex = 4;
+                 this->labelLayerWidth->Text = L"Ширина слоя:";
+                 // 
+                 // labelDataFileName
+                 // 
+                 this->labelDataFileName->AutoSize = true;
+                 this->labelDataFileName->Location = System::Drawing::Point(2, 70);
+                 this->labelDataFileName->Name = L"labelDataFileName";
+                 this->labelDataFileName->Size = System::Drawing::Size(39, 13);
+                 this->labelDataFileName->TabIndex = 3;
+                 this->labelDataFileName->Text = L"Файл:";
+                 // 
+                 // buttonLoadData
+                 // 
+                 this->buttonLoadData->Location = System::Drawing::Point(116, 46);
+                 this->buttonLoadData->Name = L"buttonLoadData";
+                 this->buttonLoadData->Size = System::Drawing::Size(94, 22);
+                 this->buttonLoadData->TabIndex = 2;
+                 this->buttonLoadData->Text = L"Загрузить";
+                 this->buttonLoadData->UseVisualStyleBackColor = true;
+                 this->buttonLoadData->Click += gcnew System::EventHandler(this, &MainForm::buttonLoadData_Click);
+                 // 
+                 // textBoxInputFile
+                 // 
+                 this->textBoxInputFile->Location = System::Drawing::Point(6, 20);
+                 this->textBoxInputFile->Name = L"textBoxInputFile";
+                 this->textBoxInputFile->Size = System::Drawing::Size(204, 20);
+                 this->textBoxInputFile->TabIndex = 1;
                  // 
                  // MainForm
                  // 
                  this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
                  this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-                 this->ClientSize = System::Drawing::Size(624, 442);
-                 this->Controls->Add(this->groupBox1);
-                 this->Controls->Add(this->StatusLabel);
-                 this->Controls->Add(this->button1);
+                 this->ClientSize = System::Drawing::Size(744, 453);
+                 this->Controls->Add(this->groupBoxLoadData);
+                 this->Controls->Add(this->groupBoxRender);
+                 this->Controls->Add(this->labelStatus);
                  this->MinimumSize = System::Drawing::Size(640, 480);
                  this->Name = L"MainForm";
                  this->Text = L"Аццкая рисовался";
                  this->Load += gcnew System::EventHandler(this, &MainForm::MainForm_Load);
                  this->Resize += gcnew System::EventHandler(this, &MainForm::MainForm_Resize);
-                 this->groupBox1->ResumeLayout(false);
+                 this->groupBoxRender->ResumeLayout(false);
+                 this->groupBoxLoadData->ResumeLayout(false);
+                 this->groupBoxLoadData->PerformLayout();
                  this->ResumeLayout(false);
                  this->PerformLayout();
 
              }
 #pragma endregion
     private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e) {
-                 DrawGLScene();
-                 SwapBuffers(hDC);
+                 if (this->openDataDialog->ShowDialog() == Windows::Forms::DialogResult::OK) {
+                     this->textBoxInputFile->Text = this->openDataDialog->FileName;
+                     textBoxInputFile->Select(textBoxInputFile->Text->Length, 0);
+                     textBoxInputFile->ScrollToCaret();
+                 }
             }
 
     private: System::Void MainForm_Load(System::Object^  sender, System::EventArgs^  e) {
@@ -175,7 +330,7 @@ namespace surface_reconstruction {
                  hWnd = (HWND)(intptr_t)this->GLWindow->Handle;
                  hDC = GetDC(hWnd);
                  if (!hDC) {
-                     this->StatusLabel->Text = L"Can't Create A GL Device Context";
+                     this->labelStatus->Text = L"Can't Create A GL Device Context";
                      return;
                  }
 
@@ -204,29 +359,31 @@ namespace surface_reconstruction {
                  LoadLibrary(L"opengl32.dll");
                  PixelFormat = ChoosePixelFormat(hDC, &pfd);
                  if (!PixelFormat) {
-                     this->StatusLabel->Text = L"Can't Find A Suitable PixelFormat.";
+                     this->labelStatus->Text = L"Can't Find A Suitable PixelFormat.";
                      return;
                  }
                  if (!SetPixelFormat(hDC, PixelFormat, &pfd)) {
-                     this->StatusLabel->Text = L"Can't Set The PixelFormat.";
+                     this->labelStatus->Text = L"Can't Set The PixelFormat.";
                      return;
                  }
                  hRC = wglCreateContext(hDC);
                  if (!hRC) {
-                     this->StatusLabel->Text = L"Can't Create A GL Rendering Context. GetLastError: " + GetLastError();
+                     this->labelStatus->Text = L"Can't Create A GL Rendering Context. GetLastError: " + GetLastError();
                      return;
                  }
                  if (!wglMakeCurrent(hDC, hRC)) {
-                     this->StatusLabel->Text = L"Can't Activate The GL Rendering Context.";
+                     this->labelStatus->Text = L"Can't Activate The GL Rendering Context.";
                      return;
                  }
-                 this->StatusLabel->Text = L"GL context created!";
+                 this->labelStatus->Text = L"GL context created!";
 
                  MainForm_Resize(sender, e);
 
                  if (!InitGL()) {
-                    this->StatusLabel->Text = L"Failed to init GL";
+                    this->labelStatus->Text = L"Failed to init GL";
                  }
+
+                 data = new ScanData();
              }
 
     private: System::Void MainForm_Resize(System::Object^  sender, System::EventArgs^  e) {
@@ -250,10 +407,61 @@ namespace surface_reconstruction {
                  SwapBuffers(hDC);
              }
 
+             private: Void DrawGLScene() {
+                  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                  glLoadIdentity();
+
+                  glTranslatef(0.0f, 0.0f, -3.0f);
+                  //glColor3f(0.0f, 1.0f, 0.0f);
+                  glBegin(GL_TRIANGLES); {
+                      glColor3f((GLfloat)(rand() / (rand()+1)),
+                          (GLfloat)(rand() / (rand()+1)),
+                          (GLfloat)(rand() / (rand()+1)));
+                      glVertex3f(-1.0f, -0.4f, 0.0f);
+
+                      glColor3f((GLfloat)(rand() / (rand()+1)),
+                          (GLfloat)(rand() / (rand()+1)),
+                          (GLfloat)(rand() / (rand()+1)));
+                      glVertex3f( 1.0f, -0.4f, 0.0f);
+
+                      glColor3f((GLfloat)(rand() / (rand()+1)),
+                          (GLfloat)(rand() / (rand()+1)),
+                          (GLfloat)(rand() / (rand()+1)));
+                      glVertex3f( 0.0f,  1.0f, 0.0f);
+                  }
+                  glEnd();
+              }
+
 private: System::Void DrawTimer_Tick(System::Object^  sender, System::EventArgs^  e) {
              DrawGLScene();
              SwapBuffers(hDC);
          }
-};
+
+private: System::Void buttonLoadData_Click(System::Object^  sender, System::EventArgs^  e) {
+             String ^pathToDataFile = this->textBoxInputFile->Text;
+             if (System::IO::File::Exists(pathToDataFile)) {
+                 pathToDataFile = pathToDataFile->Replace("\\","\\\\");
+                 if (data->LoadData((char*)Runtime::InteropServices::Marshal::StringToHGlobalAnsi(pathToDataFile).ToPointer())) {
+                     this->labelStatus->Text = L"Data was loaded.";
+
+                     float fileSize = (float)(IO::FileInfo(pathToDataFile).Length >> 20);
+                     this->labelDataFileName->Text = L"Файл: " + pathToDataFile->Substring(pathToDataFile->LastIndexOf("\\")+1) +
+                                                     L" (" + fileSize + L" MB)";
+
+                     this->labelLayerWidth->Text = L"Ширина слоя: " + data->sizeX;
+                     this->labelLayerHeight->Text = L"Высота слоя: " + data->sizeY;
+                     this->labelLayerNum->Text = L"Кол-во слоев: " + data->sizeZ;
+
+                     this->labelVoxelX->Text = L"Размер по X: " + data->scaleX;
+                     this->labelVoxelY->Text = L"Размер по Y: " + data->scaleY;
+                     this->labelVoxelZ->Text = L"Размер по Z: " + data->scaleZ;
+                 } else {
+                     this->labelStatus->Text = "Error. Incorrect reading input data file.";
+                 }
+             } else {
+                 this->labelStatus->Text = "Error. Input data file not exist.";
+             }
+         }
+    };
 }
 
