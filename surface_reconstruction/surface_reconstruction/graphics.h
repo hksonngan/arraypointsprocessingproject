@@ -7,4 +7,3 @@
 #include <gl/GLu.h>
 
 int InitGL();
-void DrawGLScene();
