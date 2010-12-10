@@ -1,7 +1,7 @@
 #pragma once
 
 struct Layer {
-    short* data;
+    short *data;
     size_t sizeX, sizeY;
     float scaleX, scaleY;
 

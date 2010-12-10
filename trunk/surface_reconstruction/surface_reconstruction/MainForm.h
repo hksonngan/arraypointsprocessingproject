@@ -84,6 +84,10 @@ namespace surface_reconstruction {
         HDC     hDC;
         HGLRC   hRC;
         HWND    hWnd;
+        GLint theBox;
+        float angle;
+        float maxVal;
+        float globalScale;
     private: System::Windows::Forms::Panel^  GLWindow;
     private: System::Windows::Forms::GroupBox^  groupBoxRender;
     private: System::Windows::Forms::Timer^  timerDraw;
@@ -104,6 +108,11 @@ namespace surface_reconstruction {
     private: System::Windows::Forms::Label^  labelLayerNum;
     private: System::Windows::Forms::Label^  labelLayerHeight;
     private: System::Windows::Forms::Label^  labelLayerWidth;
+    private: System::Windows::Forms::GroupBox^  groupBoxRenderParams;
+    private: System::Windows::Forms::TextBox^  textBoxCurrentLayer;
+    private: System::Windows::Forms::Label^  labelCurrentLayer;
+    private: System::Windows::Forms::TrackBar^  trackBarLayer;
+
 
 
 
@@ -136,8 +145,14 @@ namespace surface_reconstruction {
                  this->labelDataFileName = (gcnew System::Windows::Forms::Label());
                  this->buttonLoadData = (gcnew System::Windows::Forms::Button());
                  this->textBoxInputFile = (gcnew System::Windows::Forms::TextBox());
+                 this->groupBoxRenderParams = (gcnew System::Windows::Forms::GroupBox());
+                 this->textBoxCurrentLayer = (gcnew System::Windows::Forms::TextBox());
+                 this->labelCurrentLayer = (gcnew System::Windows::Forms::Label());
+                 this->trackBarLayer = (gcnew System::Windows::Forms::TrackBar());
                  this->groupBoxRender->SuspendLayout();
                  this->groupBoxLoadData->SuspendLayout();
+                 this->groupBoxRenderParams->SuspendLayout();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayer))->BeginInit();
                  this->SuspendLayout();
                  // 
                  // buttonOpenFile
@@ -295,22 +310,68 @@ namespace surface_reconstruction {
                  this->textBoxInputFile->Size = System::Drawing::Size(204, 20);
                  this->textBoxInputFile->TabIndex = 1;
                  // 
+                 // groupBoxRenderParams
+                 // 
+                 this->groupBoxRenderParams->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
+                     | System::Windows::Forms::AnchorStyles::Right));
+                 this->groupBoxRenderParams->Controls->Add(this->textBoxCurrentLayer);
+                 this->groupBoxRenderParams->Controls->Add(this->labelCurrentLayer);
+                 this->groupBoxRenderParams->Controls->Add(this->trackBarLayer);
+                 this->groupBoxRenderParams->Location = System::Drawing::Point(523, 143);
+                 this->groupBoxRenderParams->Name = L"groupBoxRenderParams";
+                 this->groupBoxRenderParams->Size = System::Drawing::Size(216, 292);
+                 this->groupBoxRenderParams->TabIndex = 6;
+                 this->groupBoxRenderParams->TabStop = false;
+                 this->groupBoxRenderParams->Text = L"Параметры визуализации";
+                 // 
+                 // textBoxCurrentLayer
+                 // 
+                 this->textBoxCurrentLayer->Location = System::Drawing::Point(133, 17);
+                 this->textBoxCurrentLayer->Name = L"textBoxCurrentLayer";
+                 this->textBoxCurrentLayer->Size = System::Drawing::Size(67, 20);
+                 this->textBoxCurrentLayer->TabIndex = 2;
+                 this->textBoxCurrentLayer->Text = L"0";
+                 this->textBoxCurrentLayer->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
+                 this->textBoxCurrentLayer->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxCurrentLayer_TextChanged);
+                 // 
+                 // labelCurrentLayer
+                 // 
+                 this->labelCurrentLayer->AutoSize = true;
+                 this->labelCurrentLayer->Location = System::Drawing::Point(6, 20);
+                 this->labelCurrentLayer->Name = L"labelCurrentLayer";
+                 this->labelCurrentLayer->Size = System::Drawing::Size(106, 13);
+                 this->labelCurrentLayer->TabIndex = 1;
+                 this->labelCurrentLayer->Text = L"Визуализация слоя";
+                 // 
+                 // trackBarLayer
+                 // 
+                 this->trackBarLayer->Location = System::Drawing::Point(6, 36);
+                 this->trackBarLayer->Maximum = 0;
+                 this->trackBarLayer->Name = L"trackBarLayer";
+                 this->trackBarLayer->Size = System::Drawing::Size(204, 42);
+                 this->trackBarLayer->TabIndex = 0;
+                 this->trackBarLayer->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarLayer_ValueChanged);
+                 // 
                  // MainForm
                  // 
                  this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
                  this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
                  this->ClientSize = System::Drawing::Size(744, 453);
+                 this->Controls->Add(this->groupBoxRenderParams);
                  this->Controls->Add(this->groupBoxLoadData);
                  this->Controls->Add(this->groupBoxRender);
                  this->Controls->Add(this->labelStatus);
                  this->MinimumSize = System::Drawing::Size(640, 480);
                  this->Name = L"MainForm";
-                 this->Text = L"Аццкая рисовался";
+                 this->Text = L"Аццкая рисовалка";
                  this->Load += gcnew System::EventHandler(this, &MainForm::MainForm_Load);
                  this->Resize += gcnew System::EventHandler(this, &MainForm::MainForm_Resize);
                  this->groupBoxRender->ResumeLayout(false);
                  this->groupBoxLoadData->ResumeLayout(false);
                  this->groupBoxLoadData->PerformLayout();
+                 this->groupBoxRenderParams->ResumeLayout(false);
+                 this->groupBoxRenderParams->PerformLayout();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayer))->EndInit();
                  this->ResumeLayout(false);
                  this->PerformLayout();
 
@@ -383,6 +444,57 @@ namespace surface_reconstruction {
                     this->labelStatus->Text = L"Failed to init GL";
                  }
 
+                 theBox = glGenLists(1);
+                 glNewList(theBox, GL_COMPILE);
+                 glBegin(GL_QUADS); {
+                     // front face
+                     glNormal3f(0.0f, 0.0f, 1.0f);
+                     glVertex3f(0.5f, 0.5f, 0.5f);
+                     glVertex3f(0.5f, -0.5f, 0.5f);
+                     glVertex3f(-0.5f, -0.5f, 0.5f);
+                     glVertex3f(-0.5f, 0.5f, 0.5f);
+
+                     // left face
+                     glNormal3f(-1.0f, 0.0f, 0.0f);
+                     glVertex3f(-0.5f, 0.5f, 0.5f);
+                     glVertex3f(-0.5f, -0.5f, 0.5f);
+                     glVertex3f(-0.5f, -0.5f, -0.5f);
+                     glVertex3f(-0.5f, 0.5f, -0.5f);
+
+                     // back face
+                     glNormal3f(0.0f, 0.0f, -1.0f);
+                     glVertex3f(-0.5f, 0.5f, -0.5f);
+                     glVertex3f(-0.5f, -0.5f, -0.5f);
+                     glVertex3f(0.5f, -0.5f, -0.5f);
+                     glVertex3f(0.5f, 0.5f, -0.5f);
+
+                     // right face
+                     glNormal3f(1.0f, 0.0f, 0.0f);
+                     glVertex3f(0.5f, 0.5f, -0.5f);
+                     glVertex3f(0.5f, -0.5f, -0.5f);
+                     glVertex3f(0.5f, -0.5f, 0.5f);
+                     glVertex3f(0.5f, 0.5f, 0.5f);
+
+                     // top face
+                     glNormal3f(0.0f, 1.0f, 0.0f);
+                     glVertex3f(-0.5f, 0.5f, -0.5f);
+                     glVertex3f(0.5f, 0.5f, -0.5f);
+                     glVertex3f(0.5f, 0.5f, 0.5f);
+                     glVertex3f(-0.5f, 0.5f, 0.5f);
+
+                     // bottom face
+                     glNormal3f(0.0f, -1.0f, 0.0f);
+                     glVertex3f(-0.5f, -0.5f, 0.5f);
+                     glVertex3f(0.5f, -0.5f, 0.5f);
+                     glVertex3f(0.5f, -0.5f, -0.5f);
+                     glVertex3f(-0.5f, -0.5f, -0.5f);
+                 }
+                 glEnd();
+                 glEndList();
+
+                 angle = 0;
+                 globalScale = (float)0.0005;
+
                  data = new ScanData();
              }
 
@@ -398,7 +510,7 @@ namespace surface_reconstruction {
                  glMatrixMode(GL_PROJECTION);
                  glLoadIdentity();
 
-                 gluPerspective(45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 100.0f);
+                 gluPerspective(45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 10000.0f);
 
                  glMatrixMode(GL_MODELVIEW);
                  glLoadIdentity();
@@ -411,8 +523,10 @@ namespace surface_reconstruction {
                   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                   glLoadIdentity();
 
-                  glTranslatef(0.0f, 0.0f, -3.0f);
+                  glScalef(globalScale, globalScale, globalScale);
+                  glTranslatef(0.0f, 0.0f, -600.0f);
                   //glColor3f(0.0f, 1.0f, 0.0f);
+                  /*
                   glBegin(GL_TRIANGLES); {
                       glColor3f((GLfloat)(rand() / (rand()+1)),
                           (GLfloat)(rand() / (rand()+1)),
@@ -430,12 +544,40 @@ namespace surface_reconstruction {
                       glVertex3f( 0.0f,  1.0f, 0.0f);
                   }
                   glEnd();
+                  //*/
+                  //angle += 2;
+                  //glRotatef(angle, 0.0f, 1.0f, 0.0f);
+                  //glCallList(theBox);
+                  if (data && data->data) {
+                      RenderLayer(this->trackBarLayer->Value);
+                  }
+              }
+
+              private: Void RenderLayer(size_t z) {
+                  glScalef(data->scaleX, data->scaleY, data->scaleZ);
+                  glTranslatef(0.0f, 0.0f, ((float)(data->sizeZ / 2) - z) * data->scaleZ);
+                  glPushMatrix();
+                  for (size_t iColumn = 0; iColumn < data->sizeY; ++iColumn) {
+                      glPushMatrix();
+                      glTranslatef(((float)(data->sizeX / 2) - iColumn) * data->scaleX, 0.0f, 0.0f);
+                      for (size_t iRow = 0; iRow < data->sizeX; ++iRow) {
+                          glPushMatrix();
+                          glTranslatef(0.0f, ((float)(data->sizeY / 2) - iRow) * data->scaleY, 0.0f);
+                          float ro = (float)(data->data[iRow + iColumn * data->sizeX + z * data->sizeX * data->sizeY]) / maxVal;
+                          ro *= 30;
+                          glColor3f(ro, ro, ro);
+                          glCallList(theBox);
+                          glPopMatrix();
+                      }
+                      glPopMatrix();
+                  }
+                  glPopMatrix();
               }
 
 private: System::Void DrawTimer_Tick(System::Object^  sender, System::EventArgs^  e) {
-             DrawGLScene();
-             SwapBuffers(hDC);
-         }
+                 DrawGLScene();
+                 SwapBuffers(hDC);
+             }
 
 private: System::Void buttonLoadData_Click(System::Object^  sender, System::EventArgs^  e) {
              String ^pathToDataFile = this->textBoxInputFile->Text;
@@ -455,6 +597,10 @@ private: System::Void buttonLoadData_Click(System::Object^  sender, System::Even
                      this->labelVoxelX->Text = L"Размер по X: " + data->scaleX;
                      this->labelVoxelY->Text = L"Размер по Y: " + data->scaleY;
                      this->labelVoxelZ->Text = L"Размер по Z: " + data->scaleZ;
+
+                     maxVal = data->data[0];
+
+                     this->trackBarLayer->Maximum = data->sizeZ - 1;
                  } else {
                      this->labelStatus->Text = "Error. Incorrect reading input data file.";
                  }
@@ -462,6 +608,23 @@ private: System::Void buttonLoadData_Click(System::Object^  sender, System::Even
                  this->labelStatus->Text = "Error. Input data file not exist.";
              }
          }
-    };
+    private: System::Void trackBarLayer_ValueChanged(System::Object^  sender, System::EventArgs^  e) {
+                 this->textBoxCurrentLayer->Text = this->trackBarLayer->Value.ToString();
+             }
+private: System::Void textBoxCurrentLayer_TextChanged(System::Object^  sender, System::EventArgs^  e) {
+             Int32 curValue;
+             try {
+                 curValue = Int32::Parse(this->textBoxCurrentLayer->Text);
+             } catch (...) {
+                 this->labelStatus->Text = "Error. Layer value should be unsigned int.";
+                 return;
+             }
+             if (curValue >= 0 && curValue < data->sizeZ) {
+                 this->trackBarLayer->Value = curValue;
+             } else {
+                 this->labelStatus->Text = "Error. Layer should be in range [0;" + (data->sizeZ - 1) + L"].";
+             }
+         }
+};
 }
 
