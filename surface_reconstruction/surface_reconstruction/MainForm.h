@@ -84,10 +84,15 @@ namespace surface_reconstruction {
         HDC     hDC;
         HGLRC   hRC;
         HWND    hWnd;
+        
         GLint theBox;
-        float angle;
+
+        float angleXRotation, angleYRotation;
+        Point mousePosition;
+        float distance;
+
         float maxVal;
-        float globalScale;
+        float brightnessMult;
     private: System::Windows::Forms::Panel^  GLWindow;
     private: System::Windows::Forms::GroupBox^  groupBoxRender;
     private: System::Windows::Forms::Timer^  timerDraw;
@@ -112,6 +117,10 @@ namespace surface_reconstruction {
     private: System::Windows::Forms::TextBox^  textBoxCurrentLayer;
     private: System::Windows::Forms::Label^  labelCurrentLayer;
     private: System::Windows::Forms::TrackBar^  trackBarLayer;
+    private: System::Windows::Forms::TextBox^  textBoxBrightnessMult;
+
+    private: System::Windows::Forms::Label^  labelBrightnessMult;
+
 
 
 
@@ -146,6 +155,8 @@ namespace surface_reconstruction {
                  this->buttonLoadData = (gcnew System::Windows::Forms::Button());
                  this->textBoxInputFile = (gcnew System::Windows::Forms::TextBox());
                  this->groupBoxRenderParams = (gcnew System::Windows::Forms::GroupBox());
+                 this->textBoxBrightnessMult = (gcnew System::Windows::Forms::TextBox());
+                 this->labelBrightnessMult = (gcnew System::Windows::Forms::Label());
                  this->textBoxCurrentLayer = (gcnew System::Windows::Forms::TextBox());
                  this->labelCurrentLayer = (gcnew System::Windows::Forms::Label());
                  this->trackBarLayer = (gcnew System::Windows::Forms::TrackBar());
@@ -184,6 +195,10 @@ namespace surface_reconstruction {
                  this->GLWindow->Name = L"GLWindow";
                  this->GLWindow->Size = System::Drawing::Size(499, 406);
                  this->GLWindow->TabIndex = 2;
+                 this->GLWindow->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseMove);
+                 this->GLWindow->Click += gcnew System::EventHandler(this, &MainForm::GLWindow_Click);
+                 this->GLWindow->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseDown);
+                 this->GLWindow->MouseWheel += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseWheel);
                  // 
                  // groupBoxRender
                  // 
@@ -314,6 +329,8 @@ namespace surface_reconstruction {
                  // 
                  this->groupBoxRenderParams->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
                      | System::Windows::Forms::AnchorStyles::Right));
+                 this->groupBoxRenderParams->Controls->Add(this->textBoxBrightnessMult);
+                 this->groupBoxRenderParams->Controls->Add(this->labelBrightnessMult);
                  this->groupBoxRenderParams->Controls->Add(this->textBoxCurrentLayer);
                  this->groupBoxRenderParams->Controls->Add(this->labelCurrentLayer);
                  this->groupBoxRenderParams->Controls->Add(this->trackBarLayer);
@@ -323,6 +340,25 @@ namespace surface_reconstruction {
                  this->groupBoxRenderParams->TabIndex = 6;
                  this->groupBoxRenderParams->TabStop = false;
                  this->groupBoxRenderParams->Text = L"Параметры визуализации";
+                 // 
+                 // textBoxBrightnessMult
+                 // 
+                 this->textBoxBrightnessMult->Location = System::Drawing::Point(133, 65);
+                 this->textBoxBrightnessMult->Name = L"textBoxBrightnessMult";
+                 this->textBoxBrightnessMult->Size = System::Drawing::Size(67, 20);
+                 this->textBoxBrightnessMult->TabIndex = 4;
+                 this->textBoxBrightnessMult->Text = L"30,0";
+                 this->textBoxBrightnessMult->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
+                 this->textBoxBrightnessMult->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxBrightnessMult_TextChanged);
+                 // 
+                 // labelBrightnessMult
+                 // 
+                 this->labelBrightnessMult->AutoSize = true;
+                 this->labelBrightnessMult->Location = System::Drawing::Point(6, 68);
+                 this->labelBrightnessMult->Name = L"labelBrightnessMult";
+                 this->labelBrightnessMult->Size = System::Drawing::Size(112, 13);
+                 this->labelBrightnessMult->TabIndex = 3;
+                 this->labelBrightnessMult->Text = L"Множитель яркости:";
                  // 
                  // textBoxCurrentLayer
                  // 
@@ -339,16 +375,16 @@ namespace surface_reconstruction {
                  this->labelCurrentLayer->AutoSize = true;
                  this->labelCurrentLayer->Location = System::Drawing::Point(6, 20);
                  this->labelCurrentLayer->Name = L"labelCurrentLayer";
-                 this->labelCurrentLayer->Size = System::Drawing::Size(106, 13);
+                 this->labelCurrentLayer->Size = System::Drawing::Size(109, 13);
                  this->labelCurrentLayer->TabIndex = 1;
-                 this->labelCurrentLayer->Text = L"Визуализация слоя";
+                 this->labelCurrentLayer->Text = L"Визуализация слоя:";
                  // 
                  // trackBarLayer
                  // 
                  this->trackBarLayer->Location = System::Drawing::Point(6, 36);
                  this->trackBarLayer->Maximum = 0;
                  this->trackBarLayer->Name = L"trackBarLayer";
-                 this->trackBarLayer->Size = System::Drawing::Size(204, 42);
+                 this->trackBarLayer->Size = System::Drawing::Size(204, 45);
                  this->trackBarLayer->TabIndex = 0;
                  this->trackBarLayer->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarLayer_ValueChanged);
                  // 
@@ -382,6 +418,7 @@ namespace surface_reconstruction {
                      this->textBoxInputFile->Text = this->openDataDialog->FileName;
                      textBoxInputFile->Select(textBoxInputFile->Text->Length, 0);
                      textBoxInputFile->ScrollToCaret();
+                     angleXRotation = angleYRotation = 0.0f;
                  }
             }
 
@@ -492,9 +529,6 @@ namespace surface_reconstruction {
                  glEnd();
                  glEndList();
 
-                 angle = 0;
-                 globalScale = (float)0.0005;
-
                  data = new ScanData();
              }
 
@@ -523,9 +557,11 @@ namespace surface_reconstruction {
                   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                   glLoadIdentity();
 
-                  glScalef(globalScale, globalScale, globalScale);
-                  glTranslatef(0.0f, 0.0f, -600.0f);
-                  //glColor3f(0.0f, 1.0f, 0.0f);
+                  glTranslatef(0.0f, 0.0f, -distance);
+                  //glTranslatef(0.0f, 0.0f, -3.0f);
+                  glRotatef(90.0f, 0.0f, 0.0, 1.0f);
+                  glRotatef(angleXRotation, 1.0f, 0.0f, 0.0f);
+                  glRotatef(angleYRotation, 0.0f, 1.0f, 0.0f);
                   /*
                   glBegin(GL_TRIANGLES); {
                       glColor3f((GLfloat)(rand() / (rand()+1)),
@@ -545,8 +581,7 @@ namespace surface_reconstruction {
                   }
                   glEnd();
                   //*/
-                  //angle += 2;
-                  //glRotatef(angle, 0.0f, 1.0f, 0.0f);
+                  //glColor3f(1.0f, 1.0f, 1.0f);
                   //glCallList(theBox);
                   if (data && data->data) {
                       RenderLayer(this->trackBarLayer->Value);
@@ -563,9 +598,9 @@ namespace surface_reconstruction {
                       for (size_t iRow = 0; iRow < data->sizeX; ++iRow) {
                           glPushMatrix();
                           glTranslatef(0.0f, ((float)(data->sizeY / 2) - iRow) * data->scaleY, 0.0f);
-                          float ro = (float)(data->data[iRow + iColumn * data->sizeX + z * data->sizeX * data->sizeY]) / maxVal;
-                          ro *= 30;
-                          glColor3f(ro, ro, ro);
+                          float grayIntense = (float)(data->data[iRow + iColumn * data->sizeX + z * data->sizeX * data->sizeY]) / maxVal;
+                          grayIntense *= brightnessMult;
+                          glColor3f(grayIntense, grayIntense, grayIntense);
                           glCallList(theBox);
                           glPopMatrix();
                       }
@@ -598,9 +633,21 @@ private: System::Void buttonLoadData_Click(System::Object^  sender, System::Even
                      this->labelVoxelY->Text = L"Размер по Y: " + data->scaleY;
                      this->labelVoxelZ->Text = L"Размер по Z: " + data->scaleZ;
 
-                     maxVal = data->data[0];
+                     maxVal = 0;
+                     for (size_t i = 10; i < data->sizeX * data->sizeY * data->sizeZ; ++i) {
+                         if (maxVal < data->data[i]) {
+                             maxVal = data->data[i];
+                         }
+                     }
+
+                     angleXRotation = angleYRotation = 0.0f;
+                     distance = 600.f;
+
+                     this->textBoxBrightnessMult->Text = L"30,0";
+                     brightnessMult = 30.f;
 
                      this->trackBarLayer->Maximum = data->sizeZ - 1;
+                     this->trackBarLayer->Value = 0;
                  } else {
                      this->labelStatus->Text = "Error. Incorrect reading input data file.";
                  }
@@ -611,6 +658,7 @@ private: System::Void buttonLoadData_Click(System::Object^  sender, System::Even
     private: System::Void trackBarLayer_ValueChanged(System::Object^  sender, System::EventArgs^  e) {
                  this->textBoxCurrentLayer->Text = this->trackBarLayer->Value.ToString();
              }
+
 private: System::Void textBoxCurrentLayer_TextChanged(System::Object^  sender, System::EventArgs^  e) {
              Int32 curValue;
              try {
@@ -624,6 +672,37 @@ private: System::Void textBoxCurrentLayer_TextChanged(System::Object^  sender, S
              } else {
                  this->labelStatus->Text = "Error. Layer should be in range [0;" + (data->sizeZ - 1) + L"].";
              }
+         }
+
+private: System::Void GLWindow_MouseMove(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) {
+             if (e->Button == Windows::Forms::MouseButtons::Left) {
+                 Point tmpPosition = mousePosition;
+                 mousePosition = e->Location;
+                 angleYRotation -= tmpPosition.X - mousePosition.X;
+                 angleXRotation -= tmpPosition.Y - mousePosition.Y;
+             }
+         }
+
+private: System::Void GLWindow_MouseDown(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) {
+             if (e->Button == Windows::Forms::MouseButtons::Left) {
+                mousePosition = e->Location;
+             }
+         }
+
+private: System::Void GLWindow_MouseWheel(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) {
+             distance *= (e->Delta < 0) ? (float)Math::Abs(0.66 * e->Delta / 120) :
+                                          (float)Math::Abs(1.33 * e->Delta / 120);
+         }
+
+private: System::Void textBoxBrightnessMult_TextChanged(System::Object^  sender, System::EventArgs^  e) {
+             try {
+                 brightnessMult = (float)Double::Parse(this->textBoxBrightnessMult->Text);
+             } catch (...) {
+                 this->labelStatus->Text = L"Invalid number format for brightness mult.";
+             }
+         }
+private: System::Void GLWindow_Click(System::Object^  sender, System::EventArgs^  e) {
+             this->GLWindow->Focus();
          }
 };
 }
