@@ -678,8 +678,8 @@ private: System::Void GLWindow_MouseMove(System::Object^  sender, System::Window
              if (e->Button == Windows::Forms::MouseButtons::Left) {
                  Point tmpPosition = mousePosition;
                  mousePosition = e->Location;
-                 angleYRotation -= tmpPosition.X - mousePosition.X;
-                 angleXRotation -= tmpPosition.Y - mousePosition.Y;
+                 angleXRotation -= tmpPosition.X - mousePosition.X;
+                 angleYRotation += tmpPosition.Y - mousePosition.Y;
              }
          }
 
