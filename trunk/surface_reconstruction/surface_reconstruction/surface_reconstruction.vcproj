@@ -231,6 +231,10 @@
 				RelativePath=".\surface_reconstruction.cpp"
 				>
 			</File>
+			<Filter
+				Name="Segmentation"
+				>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -263,6 +267,14 @@
 				RelativePath=".\stdafx.h"
 				>
 			</File>
+			<Filter
+				Name="Segmentation"
+				>
+				<File
+					RelativePath=".\Graph.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"
