@@ -234,6 +234,10 @@
 			<Filter
 				Name="Segmentation"
 				>
+				<File
+					RelativePath=".\Graph.cpp"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
