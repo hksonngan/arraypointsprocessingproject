@@ -1,6 +1,7 @@
 #pragma once
 #include "ScanData.h"
 #include <list>
+#include <iostream>
 
 class GraphVoxel
 {
@@ -31,6 +32,7 @@ public:
 class Segment
 {
 public:
+    size_t сapacity;//количество тогчек
     Voxel* voxel;//индексы в общем массиве
     short weightSegment;//вес сегмента(максимальный перепад между точками)
     size_t indexSegment;//индекс в сегменте
@@ -59,6 +61,8 @@ public:
 
 };
 
+typedef void (funct)(char* str);
+
 //хранилище сегментов разных размеров
 class SegmentsTree
 {
@@ -78,7 +82,8 @@ public:
     //дать верхний слой
     LayerSegmentsTree* GetOldLayer();
     //определить соседние сегменты
-    void DeterminationAdjacents(LayerSegmentsTree* oldLayer, Segment* segmentCurrent, std::list<Segment*>& segmentAdjacents, bool* isNotSegmentVisit);
+    void DeterminationAdjacents(LayerSegmentsTree* oldLayer, Segment* segmentCurrent, Segment** segmentAdjacents, 
+        bool* isNotSegmentVisit, size_t& countSegmentAdjacents, bool* isNotVisit, size_t* visitSegment, short w);
     //создать новый слой
     void CreateNewLayer();
 };

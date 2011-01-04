@@ -278,6 +278,19 @@
 					RelativePath=".\Graph.h"
 					>
 				</File>
+				<File
+					RelativePath=".\SegmentationForm.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\SegmentationForm.h"
+					FileType="3"
+					>
+					<File
+						RelativePath=".\SegmentationForm.resx"
+						>
+					</File>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter
