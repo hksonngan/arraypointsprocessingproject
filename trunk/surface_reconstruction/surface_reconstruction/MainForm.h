@@ -44,6 +44,11 @@ namespace surface_reconstruction {
             //
         }
 
+        void ChangeData(ScanData* sData)
+        {
+            data = sData;
+        }
+
     protected:
         /// <summary>
         /// Clean up any resources being used.
@@ -726,6 +731,7 @@ private: System::Void GLWindow_Click(System::Object^  sender, System::EventArgs^
              this->GLWindow->Focus();
          }
 private: System::Void Segmentation_Click(System::Object^  sender, System::EventArgs^  e) {
+             segmentationForm->StaticDelInst = gcnew MyDel(this, &MainForm::ChangeData);
              segmentationForm->Show();             
          }
 };

@@ -55,16 +55,16 @@ ScanData* LayerSegmentsTree::CreateData(size_t* index, size_t count)
     Voxel* voxel = 0;
     while (currentSegment != 0)
     {
-        if (segment->indexSegment == index[j])
+        if (currentSegment->indexSegment == index[j])
         {
-            voxel = segment->voxel;
+            voxel = currentSegment->voxel;
             while (voxel != 0)
             {
                 data->data[voxel->index] = segmentsTree->scanData->data[voxel->index];
                 voxel = voxel->next;
             }
         }
-        segment = segment->next;
+        currentSegment = currentSegment->next;
     }    
     return data;
 }
@@ -75,6 +75,7 @@ SegmentsTree::SegmentsTree()
     countLayer = 0;
     root = 0;
     step = 50;
+    countSegments = 0;
 }
 
 SegmentsTree::SegmentsTree(ScanData* data)
@@ -82,6 +83,7 @@ SegmentsTree::SegmentsTree(ScanData* data)
     countLayer = 0;
     root = 0;
     step = 50;
+    countSegments = 0;
     CreateRoot(data);
 }
 
@@ -119,6 +121,7 @@ void SegmentsTree::CreateRoot(ScanData* data)
     root->down = 0;
     root->up = 0;
     root->segmentsTree = this;
+    countSegments++;
 }
 
 LayerSegmentsTree* SegmentsTree::GetOldLayer()
@@ -225,8 +228,9 @@ void SegmentsTree::DeterminationAdjacents(LayerSegmentsTree* oldLayer, Segment* 
     }
 }
 
-void SegmentsTree::CreateNewLayer()
+LayerSegmentsTree* SegmentsTree::CreateNewLayer()
 {
+    countSegments++;
     LayerSegmentsTree* oldLayer = GetOldLayer();
 
     Segment* segment = oldLayer->segment;
@@ -316,7 +320,7 @@ void SegmentsTree::CreateNewLayer()
             Segment* segmentCurrent; 
             Voxel* currentVoxel = 0;
             maxWeight = segment->weightSegment;
-            for (int segmentAdjacent = 0; segmentAdjacent < countSegmentAdjacents; segmentAdjacent++)
+            for (size_t segmentAdjacent = 0; segmentAdjacent < countSegmentAdjacents; segmentAdjacent++)
             {
                 segmentCurrent = segmentAdjacents[segmentAdjacent];
                 maxWeight = max(segmentCurrent->weightSegment, maxWeight);
@@ -360,4 +364,6 @@ void SegmentsTree::CreateNewLayer()
     delete [] isNotVisit;
     delete [] isNotSegmentVisit;
     delete [] visitSegment;
+
+    return newLayer;
 }

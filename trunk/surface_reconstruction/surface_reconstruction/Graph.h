@@ -71,7 +71,8 @@ public:
     LayerSegmentsTree* root;//корень
     ScanData* scanData; //указатель на исходные данные
     short step;
-    int indexSegments;
+    size_t indexSegments;
+    size_t countSegments;
 
     //конструктор
     SegmentsTree();
@@ -85,6 +86,6 @@ public:
     void DeterminationAdjacents(LayerSegmentsTree* oldLayer, Segment* segmentCurrent, Segment** segmentAdjacents, 
         bool* isNotSegmentVisit, size_t& countSegmentAdjacents, bool* isNotVisit, size_t* visitSegment, short w);
     //создать новый слой
-    void CreateNewLayer();
+    LayerSegmentsTree* CreateNewLayer();
 };
 
