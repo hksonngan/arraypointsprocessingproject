@@ -6,6 +6,7 @@
 
 #include "graphics.h"
 #include "ScanData.h"
+#include "SegmentationForm.h"
 
 #include <stdio.h>
 
@@ -76,6 +77,7 @@ namespace surface_reconstruction {
 
     public:
         ScanData *data;
+        static SegmentationForm^ segmentationForm = gcnew SegmentationForm();
 
     private:
         /// <summary>
@@ -120,6 +122,8 @@ namespace surface_reconstruction {
     private: System::Windows::Forms::TextBox^  textBoxBrightnessMult;
 
     private: System::Windows::Forms::Label^  labelBrightnessMult;
+    private: System::Windows::Forms::Button^  Segmentation;
+
 
 
 
@@ -155,6 +159,7 @@ namespace surface_reconstruction {
                  this->buttonLoadData = (gcnew System::Windows::Forms::Button());
                  this->textBoxInputFile = (gcnew System::Windows::Forms::TextBox());
                  this->groupBoxRenderParams = (gcnew System::Windows::Forms::GroupBox());
+                 this->Segmentation = (gcnew System::Windows::Forms::Button());
                  this->textBoxBrightnessMult = (gcnew System::Windows::Forms::TextBox());
                  this->labelBrightnessMult = (gcnew System::Windows::Forms::Label());
                  this->textBoxCurrentLayer = (gcnew System::Windows::Forms::TextBox());
@@ -195,10 +200,10 @@ namespace surface_reconstruction {
                  this->GLWindow->Name = L"GLWindow";
                  this->GLWindow->Size = System::Drawing::Size(499, 406);
                  this->GLWindow->TabIndex = 2;
+                 this->GLWindow->MouseWheel += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseWheel);
                  this->GLWindow->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseMove);
                  this->GLWindow->Click += gcnew System::EventHandler(this, &MainForm::GLWindow_Click);
                  this->GLWindow->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseDown);
-                 this->GLWindow->MouseWheel += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseWheel);
                  // 
                  // groupBoxRender
                  // 
@@ -329,6 +334,7 @@ namespace surface_reconstruction {
                  // 
                  this->groupBoxRenderParams->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
                      | System::Windows::Forms::AnchorStyles::Right));
+                 this->groupBoxRenderParams->Controls->Add(this->Segmentation);
                  this->groupBoxRenderParams->Controls->Add(this->textBoxBrightnessMult);
                  this->groupBoxRenderParams->Controls->Add(this->labelBrightnessMult);
                  this->groupBoxRenderParams->Controls->Add(this->textBoxCurrentLayer);
@@ -340,6 +346,17 @@ namespace surface_reconstruction {
                  this->groupBoxRenderParams->TabIndex = 6;
                  this->groupBoxRenderParams->TabStop = false;
                  this->groupBoxRenderParams->Text = L"Параметры визуализации";
+                 // 
+                 // Segmentation
+                 // 
+                 this->Segmentation->Enabled = false;
+                 this->Segmentation->Location = System::Drawing::Point(6, 97);
+                 this->Segmentation->Name = L"Segmentation";
+                 this->Segmentation->Size = System::Drawing::Size(75, 23);
+                 this->Segmentation->TabIndex = 5;
+                 this->Segmentation->Text = L"сегментация";
+                 this->Segmentation->UseVisualStyleBackColor = true;
+                 this->Segmentation->Click += gcnew System::EventHandler(this, &MainForm::Segmentation_Click);
                  // 
                  // textBoxBrightnessMult
                  // 
@@ -648,12 +665,16 @@ private: System::Void buttonLoadData_Click(System::Object^  sender, System::Even
 
                      this->trackBarLayer->Maximum = data->sizeZ - 1;
                      this->trackBarLayer->Value = 0;
+
+                     segmentationForm->data = data;
+                     Segmentation->Enabled = true;
+
                  } else {
                      this->labelStatus->Text = "Error. Incorrect reading input data file.";
                  }
              } else {
                  this->labelStatus->Text = "Error. Input data file not exist.";
-             }
+             }             
          }
     private: System::Void trackBarLayer_ValueChanged(System::Object^  sender, System::EventArgs^  e) {
                  this->textBoxCurrentLayer->Text = this->trackBarLayer->Value.ToString();
@@ -703,6 +724,9 @@ private: System::Void textBoxBrightnessMult_TextChanged(System::Object^  sender,
          }
 private: System::Void GLWindow_Click(System::Object^  sender, System::EventArgs^  e) {
              this->GLWindow->Focus();
+         }
+private: System::Void Segmentation_Click(System::Object^  sender, System::EventArgs^  e) {
+             segmentationForm->Show();             
          }
 };
 }

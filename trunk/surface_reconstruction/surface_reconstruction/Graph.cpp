@@ -129,8 +129,8 @@ LayerSegmentsTree* SegmentsTree::GetOldLayer()
     return layer;
 }
 
-void SegmentsTree::DeterminationAdjacents(LayerSegmentsTree* oldLayer, Segment* segmentCurrent, 
-                                          std::list<Segment*>& segmentAdjacents, bool* isNotSegmentVisit)
+void SegmentsTree::DeterminationAdjacents(LayerSegmentsTree* oldLayer, Segment* segmentCurrent, Segment** segmentAdjacents, 
+                                          bool* isNotSegmentVisit, size_t& countSegmentAdjacents, bool* isNotVisit, size_t* visitSegment, short w)
 {
     //индексы смещения
     char relativeIndexMatrix[27][3] = {//i,j,k
@@ -163,16 +163,14 @@ void SegmentsTree::DeterminationAdjacents(LayerSegmentsTree* oldLayer, Segment* 
         {-1,-1,-1},//26
     };
 
-    bool* isNotVisit = new bool [oldLayer->segmentCount];
-    
-    for (size_t i = 0; i < oldLayer->segmentCount; i++)
-        isNotVisit[i] = true;
+
 
     
     std::stack<Segment*> stackSegments;
     stackSegments.push(segmentCurrent);
 
     size_t adjacentsCount = 0; 
+    size_t visitCount = 0;
 
     isNotVisit[segmentCurrent->indexSegment] = false;
 
@@ -183,18 +181,18 @@ void SegmentsTree::DeterminationAdjacents(LayerSegmentsTree* oldLayer, Segment* 
         stackSegments.pop();
 
         Voxel* currentVoxel = segmentCurrent->voxel;
-        size_t index = 0;
+        size_t indexVoxel = 0;
 
         std::list<Segment*>::iterator segmentAdjacent;
         while(currentVoxel != 0)
         {
             for(size_t k = 1; k < 27; k++)
             {
-                index = currentVoxel->index + relativeIndexMatrix[k][0] + relativeIndexMatrix[k][1] * scanData->sizeX +
+                indexVoxel = currentVoxel->index + relativeIndexMatrix[k][0] + relativeIndexMatrix[k][1] * scanData->sizeX +
                     relativeIndexMatrix[k][2] * scanData->sizeX * scanData->sizeY;
-                if ((index >= 0) && (index < oldLayer->segmentCount))
+                if ((indexVoxel >= 0) && (indexVoxel < scanData->sizeX * scanData->sizeY * scanData->sizeZ))
                 {
-                    Segment* segment = oldLayer->allVoxel[index].segment;
+                    Segment* segment = oldLayer->allVoxel[indexVoxel].segment;
                     size_t indexiSegmentAdjacent =  segment->indexSegment;
 
                     if (isNotSegmentVisit[indexiSegmentAdjacent])
@@ -202,9 +200,12 @@ void SegmentsTree::DeterminationAdjacents(LayerSegmentsTree* oldLayer, Segment* 
                         if (isNotVisit[indexiSegmentAdjacent])
                         {
                             isNotVisit[indexiSegmentAdjacent] = false;
-                            if (abs(segmentCurrent->weightSegment - segment->weightSegment) <= step)
+                            visitSegment[visitCount] = indexiSegmentAdjacent;
+                            visitCount++;                            
+                            if (abs(w - segment->weightSegment) <= step)
                             {
-                                segmentAdjacents.push_back(segment);
+                                segmentAdjacents[countSegmentAdjacents] = segment;
+                                countSegmentAdjacents++;
                                 adjacentsCount++;
                                 stackSegments.push(segment);
                             }
@@ -215,9 +216,13 @@ void SegmentsTree::DeterminationAdjacents(LayerSegmentsTree* oldLayer, Segment* 
             }
             currentVoxel = currentVoxel->next;
         }
+    }   
+
+    for (size_t k = 0; k < visitCount; k++)
+    {
+        isNotVisit[visitSegment[k]] = true;
+        visitSegment[visitCount] = 0;
     }
-    
-    delete [] isNotVisit;
 }
 
 void SegmentsTree::CreateNewLayer()
@@ -226,8 +231,8 @@ void SegmentsTree::CreateNewLayer()
 
     Segment* segment = oldLayer->segment;
 
-    bool* isNotSegmentVisit = new bool [oldLayer->segmentCount];
-    for (size_t i = 0; i < oldLayer->segmentCount; i++)
+    bool* isNotSegmentVisit = new bool [oldLayer->segmentCount + 2];
+    for (size_t i = 0; i < oldLayer->segmentCount + 2; i++)
         isNotSegmentVisit[i] = true;
 
     LayerSegmentsTree* newLayer = new LayerSegmentsTree();
@@ -243,11 +248,26 @@ void SegmentsTree::CreateNewLayer()
 
     segment = oldLayer->segment;
     indexSegments = 0;
-    std::list<Segment*> segmentAdjacents;
+    Segment** segmentAdjacents;
 
     short maxWeight = 0;
     size_t countVoxel = 0;
     size_t maxCountVoxel = 0;
+    size_t sumCountVoxel = 0;
+    size_t countSegmentVisit = 0;
+    size_t countSegmentAdjacents = 0;
+    segmentAdjacents = new Segment* [oldLayer->segmentCount];
+    bool* isNotVisit = new bool [oldLayer->segmentCount + 2];
+    size_t* visitSegment = new size_t [oldLayer->segmentCount];
+
+    for (size_t k = 0; k < oldLayer->segmentCount; k++)
+    {
+        segmentAdjacents[k] = 0;
+        isNotVisit[k] = true;
+        visitSegment[k] = 0;
+    }
+
+    size_t countSegmentNotVisit = oldLayer->segmentCount -  countSegmentVisit;
 
     while (segment != 0)
     {
@@ -255,21 +275,29 @@ void SegmentsTree::CreateNewLayer()
         {            
             countVoxel = 0;
             //подготовка списка соседей
-            segmentAdjacents.clear();
-            /*if (scanData->data[segment->voxel->index] == 0)
+
+            if ((countSegmentNotVisit / 2) > oldLayer->segmentCount -  countSegmentVisit)
             {
-                segmentAdjacents.resize(size_t(scanData->sizeX*scanData->sizeY*scanData->sizeZ / 3));
-            }*/
-            segmentAdjacents.push_back(segment);
+                countSegmentNotVisit = oldLayer->segmentCount -  countSegmentVisit + 1;
+                delete [] segmentAdjacents;
+                delete [] visitSegment;
+                segmentAdjacents = new Segment* [countSegmentNotVisit];
+                visitSegment = new size_t [countSegmentNotVisit];
+            }
+
+            countSegmentAdjacents = 1;
+
+            segmentAdjacents[0] = segment;
             //определяем соседей
 
-            DeterminationAdjacents(oldLayer, segment, segmentAdjacents, isNotSegmentVisit);
+            DeterminationAdjacents(oldLayer, segment, segmentAdjacents, isNotSegmentVisit, 
+                countSegmentAdjacents, isNotVisit, visitSegment, segment->weightSegment);
 
             //создание нового сегмента
             if (newLayer->segment != 0)
             {
                 newLayer->oldSegment->next = new Segment();
-                newLayer->oldSegment = newLayer->segment->next;
+                newLayer->oldSegment = newLayer->oldSegment->next;
             }
             else
             {
@@ -288,10 +316,9 @@ void SegmentsTree::CreateNewLayer()
             Segment* segmentCurrent; 
             Voxel* currentVoxel = 0;
             maxWeight = segment->weightSegment;
-            for (std::list<Segment*>::iterator segmentAdjacent = segmentAdjacents.begin(); 
-                segmentAdjacent != segmentAdjacents.end(); segmentAdjacent++)
+            for (int segmentAdjacent = 0; segmentAdjacent < countSegmentAdjacents; segmentAdjacent++)
             {
-                segmentCurrent = *segmentAdjacent;
+                segmentCurrent = segmentAdjacents[segmentAdjacent];
                 maxWeight = max(segmentCurrent->weightSegment, maxWeight);
 
                 currentVoxel = segmentCurrent->voxel;
@@ -311,18 +338,26 @@ void SegmentsTree::CreateNewLayer()
 
                 isNotSegmentVisit[segmentCurrent->indexSegment] = false;
                 countVoxel++;
-            }
-            maxCountVoxel = max(maxCountVoxel, countVoxel);
+                countSegmentVisit++;
 
+                segmentAdjacents[segmentAdjacent] = NULL;
+            }
+            oldVoxel->next = NULL;
+            maxCountVoxel = max(maxCountVoxel, countVoxel);
+            newLayer->oldSegment->сapacity = countVoxel;
             newLayer->oldSegment->weightSegment = maxWeight;
+            sumCountVoxel += countVoxel;
+            
 
         }
         segment = segment->next;
         indexSegments++;
 
     }
-    segmentAdjacents.clear();
     newLayer->maxCapacity = maxCountVoxel;
-
-    //delete [] isNotSegmentVisit;
+    
+    delete [] segmentAdjacents;
+    delete [] isNotVisit;
+    delete [] isNotSegmentVisit;
+    delete [] visitSegment;
 }
