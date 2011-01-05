@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Windows.h>
-#include <gl/GL.h>
-#include <gl/GLu.h>
+
+#include "glee.h"
 
 #include "graphics.h"
 #include "ScanData.h"
@@ -14,6 +14,8 @@
 #pragma comment (lib,"glu32.lib")
 #pragma comment (lib,"User32.lib")
 #pragma comment (lib,"gdi32.lib")
+
+#define OPTIMIZED_RENDER
 
 namespace surface_reconstruction {
 
@@ -93,6 +95,7 @@ namespace surface_reconstruction {
         HWND    hWnd;
         
         GLint theBox;
+        unsigned int vertexVBOID, indexVBOID, colorVBOID;
 
         float angleXRotation, angleYRotation;
         Point mousePosition;
@@ -128,6 +131,9 @@ namespace surface_reconstruction {
 
     private: System::Windows::Forms::Label^  labelBrightnessMult;
     private: System::Windows::Forms::Button^  Segmentation;
+    private: System::Windows::Forms::GroupBox^  groupBoxRenderType;
+    private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeVBO;
+    private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeImmediate;
 
 
 
@@ -164,6 +170,9 @@ namespace surface_reconstruction {
                  this->buttonLoadData = (gcnew System::Windows::Forms::Button());
                  this->textBoxInputFile = (gcnew System::Windows::Forms::TextBox());
                  this->groupBoxRenderParams = (gcnew System::Windows::Forms::GroupBox());
+                 this->groupBoxRenderType = (gcnew System::Windows::Forms::GroupBox());
+                 this->radioButtonRenderTypeVBO = (gcnew System::Windows::Forms::RadioButton());
+                 this->radioButtonRenderTypeImmediate = (gcnew System::Windows::Forms::RadioButton());
                  this->Segmentation = (gcnew System::Windows::Forms::Button());
                  this->textBoxBrightnessMult = (gcnew System::Windows::Forms::TextBox());
                  this->labelBrightnessMult = (gcnew System::Windows::Forms::Label());
@@ -173,6 +182,7 @@ namespace surface_reconstruction {
                  this->groupBoxRender->SuspendLayout();
                  this->groupBoxLoadData->SuspendLayout();
                  this->groupBoxRenderParams->SuspendLayout();
+                 this->groupBoxRenderType->SuspendLayout();
                  (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayer))->BeginInit();
                  this->SuspendLayout();
                  // 
@@ -339,6 +349,7 @@ namespace surface_reconstruction {
                  // 
                  this->groupBoxRenderParams->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
                      | System::Windows::Forms::AnchorStyles::Right));
+                 this->groupBoxRenderParams->Controls->Add(this->groupBoxRenderType);
                  this->groupBoxRenderParams->Controls->Add(this->Segmentation);
                  this->groupBoxRenderParams->Controls->Add(this->textBoxBrightnessMult);
                  this->groupBoxRenderParams->Controls->Add(this->labelBrightnessMult);
@@ -352,12 +363,46 @@ namespace surface_reconstruction {
                  this->groupBoxRenderParams->TabStop = false;
                  this->groupBoxRenderParams->Text = L"Параметры визуализации";
                  // 
+                 // groupBoxRenderType
+                 // 
+                 this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeVBO);
+                 this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeImmediate);
+                 this->groupBoxRenderType->Location = System::Drawing::Point(6, 19);
+                 this->groupBoxRenderType->Name = L"groupBoxRenderType";
+                 this->groupBoxRenderType->Size = System::Drawing::Size(204, 69);
+                 this->groupBoxRenderType->TabIndex = 6;
+                 this->groupBoxRenderType->TabStop = false;
+                 this->groupBoxRenderType->Text = L"Тип визуализации";
+                 // 
+                 // radioButtonRenderTypeVBO
+                 // 
+                 this->radioButtonRenderTypeVBO->AutoSize = true;
+                 this->radioButtonRenderTypeVBO->Location = System::Drawing::Point(7, 42);
+                 this->radioButtonRenderTypeVBO->Name = L"radioButtonRenderTypeVBO";
+                 this->radioButtonRenderTypeVBO->Size = System::Drawing::Size(120, 17);
+                 this->radioButtonRenderTypeVBO->TabIndex = 1;
+                 this->radioButtonRenderTypeVBO->Text = L"Vertex Buffer Object";
+                 this->radioButtonRenderTypeVBO->UseVisualStyleBackColor = true;
+                 this->radioButtonRenderTypeVBO->CheckedChanged += gcnew System::EventHandler(this, &MainForm::radioButtonRenderTypeVBO_CheckedChanged);
+                 // 
+                 // radioButtonRenderTypeImmediate
+                 // 
+                 this->radioButtonRenderTypeImmediate->AutoSize = true;
+                 this->radioButtonRenderTypeImmediate->Checked = true;
+                 this->radioButtonRenderTypeImmediate->Location = System::Drawing::Point(7, 19);
+                 this->radioButtonRenderTypeImmediate->Name = L"radioButtonRenderTypeImmediate";
+                 this->radioButtonRenderTypeImmediate->Size = System::Drawing::Size(73, 17);
+                 this->radioButtonRenderTypeImmediate->TabIndex = 0;
+                 this->radioButtonRenderTypeImmediate->TabStop = true;
+                 this->radioButtonRenderTypeImmediate->Text = L"Immediate";
+                 this->radioButtonRenderTypeImmediate->UseVisualStyleBackColor = true;
+                 // 
                  // Segmentation
                  // 
                  this->Segmentation->Enabled = false;
-                 this->Segmentation->Location = System::Drawing::Point(6, 97);
+                 this->Segmentation->Location = System::Drawing::Point(9, 176);
                  this->Segmentation->Name = L"Segmentation";
-                 this->Segmentation->Size = System::Drawing::Size(75, 23);
+                 this->Segmentation->Size = System::Drawing::Size(92, 23);
                  this->Segmentation->TabIndex = 5;
                  this->Segmentation->Text = L"сегментация";
                  this->Segmentation->UseVisualStyleBackColor = true;
@@ -365,7 +410,7 @@ namespace surface_reconstruction {
                  // 
                  // textBoxBrightnessMult
                  // 
-                 this->textBoxBrightnessMult->Location = System::Drawing::Point(133, 65);
+                 this->textBoxBrightnessMult->Location = System::Drawing::Point(133, 141);
                  this->textBoxBrightnessMult->Name = L"textBoxBrightnessMult";
                  this->textBoxBrightnessMult->Size = System::Drawing::Size(67, 20);
                  this->textBoxBrightnessMult->TabIndex = 4;
@@ -376,7 +421,7 @@ namespace surface_reconstruction {
                  // labelBrightnessMult
                  // 
                  this->labelBrightnessMult->AutoSize = true;
-                 this->labelBrightnessMult->Location = System::Drawing::Point(6, 68);
+                 this->labelBrightnessMult->Location = System::Drawing::Point(6, 144);
                  this->labelBrightnessMult->Name = L"labelBrightnessMult";
                  this->labelBrightnessMult->Size = System::Drawing::Size(112, 13);
                  this->labelBrightnessMult->TabIndex = 3;
@@ -384,7 +429,7 @@ namespace surface_reconstruction {
                  // 
                  // textBoxCurrentLayer
                  // 
-                 this->textBoxCurrentLayer->Location = System::Drawing::Point(133, 17);
+                 this->textBoxCurrentLayer->Location = System::Drawing::Point(133, 93);
                  this->textBoxCurrentLayer->Name = L"textBoxCurrentLayer";
                  this->textBoxCurrentLayer->Size = System::Drawing::Size(67, 20);
                  this->textBoxCurrentLayer->TabIndex = 2;
@@ -395,7 +440,7 @@ namespace surface_reconstruction {
                  // labelCurrentLayer
                  // 
                  this->labelCurrentLayer->AutoSize = true;
-                 this->labelCurrentLayer->Location = System::Drawing::Point(6, 20);
+                 this->labelCurrentLayer->Location = System::Drawing::Point(6, 96);
                  this->labelCurrentLayer->Name = L"labelCurrentLayer";
                  this->labelCurrentLayer->Size = System::Drawing::Size(109, 13);
                  this->labelCurrentLayer->TabIndex = 1;
@@ -403,7 +448,7 @@ namespace surface_reconstruction {
                  // 
                  // trackBarLayer
                  // 
-                 this->trackBarLayer->Location = System::Drawing::Point(6, 36);
+                 this->trackBarLayer->Location = System::Drawing::Point(6, 112);
                  this->trackBarLayer->Maximum = 0;
                  this->trackBarLayer->Name = L"trackBarLayer";
                  this->trackBarLayer->Size = System::Drawing::Size(204, 45);
@@ -429,6 +474,8 @@ namespace surface_reconstruction {
                  this->groupBoxLoadData->PerformLayout();
                  this->groupBoxRenderParams->ResumeLayout(false);
                  this->groupBoxRenderParams->PerformLayout();
+                 this->groupBoxRenderType->ResumeLayout(false);
+                 this->groupBoxRenderType->PerformLayout();
                  (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayer))->EndInit();
                  this->ResumeLayout(false);
                  this->PerformLayout();
@@ -507,42 +554,42 @@ namespace surface_reconstruction {
                  glNewList(theBox, GL_COMPILE);
                  glBegin(GL_QUADS); {
                      // front face
-                     glNormal3f(0.0f, 0.0f, 1.0f);
+                     //glNormal3f(0.0f, 0.0f, 1.0f);
                      glVertex3f(0.5f, 0.5f, 0.5f);
                      glVertex3f(0.5f, -0.5f, 0.5f);
                      glVertex3f(-0.5f, -0.5f, 0.5f);
                      glVertex3f(-0.5f, 0.5f, 0.5f);
 
                      // left face
-                     glNormal3f(-1.0f, 0.0f, 0.0f);
+                     //glNormal3f(-1.0f, 0.0f, 0.0f);
                      glVertex3f(-0.5f, 0.5f, 0.5f);
                      glVertex3f(-0.5f, -0.5f, 0.5f);
                      glVertex3f(-0.5f, -0.5f, -0.5f);
                      glVertex3f(-0.5f, 0.5f, -0.5f);
 
                      // back face
-                     glNormal3f(0.0f, 0.0f, -1.0f);
+                     //glNormal3f(0.0f, 0.0f, -1.0f);
                      glVertex3f(-0.5f, 0.5f, -0.5f);
                      glVertex3f(-0.5f, -0.5f, -0.5f);
                      glVertex3f(0.5f, -0.5f, -0.5f);
                      glVertex3f(0.5f, 0.5f, -0.5f);
 
                      // right face
-                     glNormal3f(1.0f, 0.0f, 0.0f);
+                     //glNormal3f(1.0f, 0.0f, 0.0f);
                      glVertex3f(0.5f, 0.5f, -0.5f);
                      glVertex3f(0.5f, -0.5f, -0.5f);
                      glVertex3f(0.5f, -0.5f, 0.5f);
                      glVertex3f(0.5f, 0.5f, 0.5f);
 
                      // top face
-                     glNormal3f(0.0f, 1.0f, 0.0f);
+                     //glNormal3f(0.0f, 1.0f, 0.0f);
                      glVertex3f(-0.5f, 0.5f, -0.5f);
                      glVertex3f(0.5f, 0.5f, -0.5f);
                      glVertex3f(0.5f, 0.5f, 0.5f);
                      glVertex3f(-0.5f, 0.5f, 0.5f);
 
                      // bottom face
-                     glNormal3f(0.0f, -1.0f, 0.0f);
+                     //glNormal3f(0.0f, -1.0f, 0.0f);
                      glVertex3f(-0.5f, -0.5f, 0.5f);
                      glVertex3f(0.5f, -0.5f, 0.5f);
                      glVertex3f(0.5f, -0.5f, -0.5f);
@@ -605,34 +652,55 @@ namespace surface_reconstruction {
                   //*/
                   //glColor3f(1.0f, 1.0f, 1.0f);
                   //glCallList(theBox);
+
                   if (data && data->data) {
-                      RenderLayer(this->trackBarLayer->Value);
+                      if (radioButtonRenderTypeImmediate->Checked) {
+                           RenderLayer(this->trackBarLayer->Value);
+                      }
+                      else if (radioButtonRenderTypeVBO->Checked) {
+                          glBindBuffer(GL_ARRAY_BUFFER, vertexVBOID);
+                          glEnableClientState(GL_VERTEX_ARRAY);
+                          glVertexPointer(3, GL_FLOAT, 0, 0);
+
+                          glBindBuffer(GL_ARRAY_BUFFER, colorVBOID);
+                          glEnableClientState(GL_COLOR_ARRAY);
+                          glColorPointer(3, GL_FLOAT, 0, 0);
+
+                          glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBOID);
+                          glDrawElements(GL_QUADS, data->sizeX * data->sizeY * 24, GL_UNSIGNED_INT, 0);
+
+                          glDisableClientState(GL_VERTEX_ARRAY);
+                          glDisableClientState(GL_COLOR_ARRAY);
+
+                          glBindBuffer(GL_ARRAY_BUFFER, 0);
+                          glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+                      }
                   }
               }
 
               private: Void RenderLayer(size_t z) {
                   glScalef(data->scaleX, data->scaleY, data->scaleZ);
-                  glTranslatef(0.0f, 0.0f, ((float)(data->sizeZ / 2) - z) * data->scaleZ);
                   glPushMatrix();
-                  for (size_t iColumn = 0; iColumn < data->sizeY; ++iColumn) {
-                      glPushMatrix();
-                      glTranslatef(((float)(data->sizeX / 2) - iColumn) * data->scaleX, 0.0f, 0.0f);
-                      for (size_t iRow = 0; iRow < data->sizeX; ++iRow) {
-                          glPushMatrix();
-                          glTranslatef(0.0f, ((float)(data->sizeY / 2) - iRow) * data->scaleY, 0.0f);
-                          float grayIntense = (float)(data->data[iRow + iColumn * data->sizeX + z * data->sizeX * data->sizeY]) / maxVal;
+                  glTranslatef(((float)(data->sizeX / 2) * data->scaleX), (float)(data->sizeY / 2) * data->scaleY, ((float)(data->sizeZ / 2) - z) * data->scaleZ);
+                  for (size_t iColumn = 0; iColumn < data->sizeX; ++iColumn) {
+                      for (size_t iRow = 0; iRow < data->sizeY; ++iRow) {
+                          glTranslatef(0.0f, -data->scaleY, 0.0f);
+                          float grayIntense = (float)(data->data[iRow + iColumn * data->sizeY + z * data->sizeX * data->sizeY]) / maxVal;
                           grayIntense *= brightnessMult;
                           glColor3f(grayIntense, grayIntense, grayIntense);
                           glCallList(theBox);
-                          glPopMatrix();
                       }
-                      glPopMatrix();
+                      glTranslatef(-data->scaleX, data->sizeY * data->scaleY, 0.0f);
                   }
                   glPopMatrix();
               }
 
 private: System::Void DrawTimer_Tick(System::Object^  sender, System::EventArgs^  e) {
+                 System::DateTime timeBefore = DateTime::Now;
                  DrawGLScene();
+                 System::DateTime timeAfter = DateTime::Now;
+                 TimeSpan ts = timeAfter - timeBefore;
+                 this->Text = L"Время отрисовки кадра: " + ts.Milliseconds + L"ms";
                  SwapBuffers(hDC);
              }
 
@@ -671,9 +739,10 @@ private: System::Void buttonLoadData_Click(System::Object^  sender, System::Even
                      this->trackBarLayer->Maximum = data->sizeZ - 1;
                      this->trackBarLayer->Value = 0;
 
+                     radioButtonRenderTypeVBO_CheckedChanged(sender, e);
+
                      segmentationForm->data = data;
                      Segmentation->Enabled = true;
-
                  } else {
                      this->labelStatus->Text = "Error. Incorrect reading input data file.";
                  }
@@ -683,7 +752,103 @@ private: System::Void buttonLoadData_Click(System::Object^  sender, System::Even
          }
     private: System::Void trackBarLayer_ValueChanged(System::Object^  sender, System::EventArgs^  e) {
                  this->textBoxCurrentLayer->Text = this->trackBarLayer->Value.ToString();
+                 radioButtonRenderTypeVBO_CheckedChanged(sender, e);
              }
+
+private: System::Void generateVBOData(unsigned int layer) {
+             float *vertexBuffer;
+             vertexBuffer = new float[data->sizeX * data->sizeY * 8 * 3];
+             for (size_t iColumn = 0; iColumn < data->sizeX; ++iColumn) {
+                 for (size_t iRow = 0; iRow < data->sizeY; ++iRow) {
+                     if (iRow == 0) {
+                         float vert[8*3] = {
+                             +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ,
+                             +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ,
+                             -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ,
+                             -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ,
+                             +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ,
+                             +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ,
+                             -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ,
+                             -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ};
+
+                         size_t base = iColumn * data->sizeY;
+                         memcpy(vertexBuffer + base * 8 * 3, vert, sizeof(vert));
+
+                         continue;
+                     }
+                     else {
+                         unsigned int curIndex = iRow + iColumn * data->sizeY;
+                         memcpy(vertexBuffer + (curIndex) * 8 * 3,
+                                vertexBuffer + (curIndex - 1) * 8 * 3,
+                                sizeof(float) * 8 * 3);
+                         for (int i = 1; i < 24; i += 3) {
+                             vertexBuffer[curIndex * 8 * 3 + i] -= data->scaleY;
+                         }
+                     }
+                 }
+             }
+
+             unsigned int ind[24] = {0, 1, 2, 3,
+                                     3, 2, 6, 7,
+                                     7, 6, 5, 4,
+                                     4, 5, 1, 0,
+                                     4, 0, 3, 7,
+                                     1, 5, 6, 2};
+
+             unsigned int *indicesBuffer;
+             indicesBuffer = new unsigned int[data->sizeX * data->sizeY * 6 * 4];
+             for (size_t i = 0; i < data->sizeX * data->sizeY * 24; i += 24) {
+                 memcpy(indicesBuffer + i, ind, sizeof(ind));
+                 for (size_t j = 0; j < 24; ++j) {
+                     ind[j] += 8;
+                 }
+             }
+
+             float *colorBuffer;
+             colorBuffer = new float[data->sizeX * data->sizeY * 8 * 3];
+             for (size_t i = data->sizeX * data->sizeY * layer; i < data->sizeX * data->sizeY * (layer + 1); ++i) {
+                 float curColor = data->data[i] / maxVal * brightnessMult;
+                 for (size_t idx = 0; idx < 24; idx++) {
+                     colorBuffer[(i - data->sizeX * data->sizeY * layer)*24 + idx] = curColor;
+                 }
+             }
+
+             unsigned int tmp;
+
+             if (vertexVBOID != 0) {
+                 tmp = vertexVBOID;
+                 glDeleteBuffers(1, &tmp);
+             }
+
+             if (colorVBOID != 0) {
+                 tmp = colorVBOID;
+                 glDeleteBuffers(1, &tmp);
+             }
+
+             if (indexVBOID != 0) {
+                 tmp = indexVBOID;
+                 glDeleteBuffers(1, &tmp);
+             }
+            
+             glGenBuffers(1, &tmp);
+             vertexVBOID = tmp;
+             glBindBuffer(GL_ARRAY_BUFFER, vertexVBOID);
+             glBufferData(GL_ARRAY_BUFFER, sizeof(float) * data->sizeX * data->sizeY * 24, vertexBuffer, GL_STATIC_DRAW);
+
+             glGenBuffers(1, &tmp);
+             colorVBOID = tmp;
+             glBindBuffer(GL_ARRAY_BUFFER, colorVBOID);
+             glBufferData(GL_ARRAY_BUFFER, sizeof(float) * data->sizeX * data->sizeY * 24, colorBuffer, GL_STATIC_DRAW);
+
+             glGenBuffers(1, &tmp);
+             indexVBOID = tmp;
+             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBOID);
+             glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * data->sizeX * data->sizeY * 24, indicesBuffer, GL_STATIC_DRAW);
+
+             delete vertexBuffer;
+             delete indicesBuffer;
+             delete colorBuffer;
+         }
 
 private: System::Void textBoxCurrentLayer_TextChanged(System::Object^  sender, System::EventArgs^  e) {
              Int32 curValue;
@@ -734,6 +899,29 @@ private: System::Void Segmentation_Click(System::Object^  sender, System::EventA
              segmentationForm->StaticDelInst = gcnew MyDel(this, &MainForm::ChangeData);
              segmentationForm->Show();             
          }
-};
+private: System::Void radioButtonRenderTypeVBO_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
+             if (radioButtonRenderTypeVBO->Checked) {
+                 generateVBOData(this->trackBarLayer->Value);
+             }
+             else {
+                 unsigned int tmp;
+
+                 if (vertexVBOID != 0) {
+                     tmp = vertexVBOID;
+                     glDeleteBuffers(1, &tmp);
+                 }
+
+                 if (colorVBOID != 0) {
+                     tmp = colorVBOID;
+                     glDeleteBuffers(1, &tmp);
+                 }
+
+                 if (indexVBOID != 0) {
+                     tmp = indexVBOID;
+                     glDeleteBuffers(1, &tmp);
+                 }
+             }
+         }
+	};
 }
 
