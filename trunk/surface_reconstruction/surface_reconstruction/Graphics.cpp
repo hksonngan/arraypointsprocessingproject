@@ -24,5 +24,7 @@ int InitGL(GLvoid) {
     glEnable(GL_LIGHT0);
 #endif
 
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+
     return TRUE;
 }

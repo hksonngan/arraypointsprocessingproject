@@ -140,6 +140,7 @@ namespace surface_reconstruction {
     private: System::Windows::Forms::TextBox^  textBoxLayerEnd;
     private: System::Windows::Forms::Label^  labelLayerDistance;
     private: System::Windows::Forms::TrackBar^  trackBarLayerDistance;
+private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
 
 
 
@@ -178,6 +179,7 @@ namespace surface_reconstruction {
                  this->buttonLoadData = (gcnew System::Windows::Forms::Button());
                  this->textBoxInputFile = (gcnew System::Windows::Forms::TextBox());
                  this->groupBoxRenderParams = (gcnew System::Windows::Forms::GroupBox());
+                 this->checkBoxTransperancy = (gcnew System::Windows::Forms::CheckBox());
                  this->labelLayerDistance = (gcnew System::Windows::Forms::Label());
                  this->trackBarLayerDistance = (gcnew System::Windows::Forms::TrackBar());
                  this->trackBarLayerEnd = (gcnew System::Windows::Forms::TrackBar());
@@ -214,7 +216,7 @@ namespace surface_reconstruction {
                  // 
                  this->labelStatus->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left));
                  this->labelStatus->AutoSize = true;
-                 this->labelStatus->Location = System::Drawing::Point(3, 438);
+                 this->labelStatus->Location = System::Drawing::Point(3, 483);
                  this->labelStatus->Name = L"labelStatus";
                  this->labelStatus->Size = System::Drawing::Size(41, 13);
                  this->labelStatus->TabIndex = 1;
@@ -227,7 +229,7 @@ namespace surface_reconstruction {
                      | System::Windows::Forms::AnchorStyles::Right));
                  this->GLWindow->Location = System::Drawing::Point(6, 19);
                  this->GLWindow->Name = L"GLWindow";
-                 this->GLWindow->Size = System::Drawing::Size(499, 406);
+                 this->GLWindow->Size = System::Drawing::Size(499, 451);
                  this->GLWindow->TabIndex = 2;
                  this->GLWindow->MouseWheel += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseWheel);
                  this->GLWindow->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseMove);
@@ -242,7 +244,7 @@ namespace surface_reconstruction {
                  this->groupBoxRender->Controls->Add(this->GLWindow);
                  this->groupBoxRender->Location = System::Drawing::Point(6, 4);
                  this->groupBoxRender->Name = L"groupBoxRender";
-                 this->groupBoxRender->Size = System::Drawing::Size(511, 431);
+                 this->groupBoxRender->Size = System::Drawing::Size(511, 476);
                  this->groupBoxRender->TabIndex = 3;
                  this->groupBoxRender->TabStop = false;
                  this->groupBoxRender->Text = L"Окно демонстрации";
@@ -363,6 +365,7 @@ namespace surface_reconstruction {
                  // 
                  this->groupBoxRenderParams->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
                      | System::Windows::Forms::AnchorStyles::Right));
+                 this->groupBoxRenderParams->Controls->Add(this->checkBoxTransperancy);
                  this->groupBoxRenderParams->Controls->Add(this->labelLayerDistance);
                  this->groupBoxRenderParams->Controls->Add(this->trackBarLayerDistance);
                  this->groupBoxRenderParams->Controls->Add(this->trackBarLayerEnd);
@@ -376,10 +379,21 @@ namespace surface_reconstruction {
                  this->groupBoxRenderParams->Controls->Add(this->trackBarLayerStart);
                  this->groupBoxRenderParams->Location = System::Drawing::Point(523, 143);
                  this->groupBoxRenderParams->Name = L"groupBoxRenderParams";
-                 this->groupBoxRenderParams->Size = System::Drawing::Size(216, 292);
+                 this->groupBoxRenderParams->Size = System::Drawing::Size(216, 337);
                  this->groupBoxRenderParams->TabIndex = 6;
                  this->groupBoxRenderParams->TabStop = false;
                  this->groupBoxRenderParams->Text = L"Параметры визуализации";
+                 // 
+                 // checkBoxTransperancy
+                 // 
+                 this->checkBoxTransperancy->AutoSize = true;
+                 this->checkBoxTransperancy->Location = System::Drawing::Point(154, 175);
+                 this->checkBoxTransperancy->Name = L"checkBoxTransperancy";
+                 this->checkBoxTransperancy->Size = System::Drawing::Size(56, 17);
+                 this->checkBoxTransperancy->TabIndex = 11;
+                 this->checkBoxTransperancy->Text = L"Trans.";
+                 this->checkBoxTransperancy->UseVisualStyleBackColor = true;
+                 this->checkBoxTransperancy->CheckedChanged += gcnew System::EventHandler(this, &MainForm::checkBoxTransperancy_CheckedChanged);
                  // 
                  // labelLayerDistance
                  // 
@@ -515,7 +529,7 @@ namespace surface_reconstruction {
                  // 
                  this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
                  this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-                 this->ClientSize = System::Drawing::Size(744, 453);
+                 this->ClientSize = System::Drawing::Size(744, 498);
                  this->Controls->Add(this->groupBoxRenderParams);
                  this->Controls->Add(this->groupBoxLoadData);
                  this->Controls->Add(this->groupBoxRender);
@@ -733,7 +747,7 @@ namespace surface_reconstruction {
                          glTranslatef(0.0f, 0.0f, localSift);
                          for (size_t iLayer = trackBarLayerStart->Value; iLayer < trackBarLayerEnd->Value + 1; ++iLayer) {
                              glTranslatef(0.0f, 0.0f, -localSift * 2 / (trackBarLayerEnd->Value - trackBarLayerStart->Value + 1));
-                             glColorPointer(3, GL_FLOAT, 0, (char*)(iLayer * data->sizeX * data->sizeY * 24 * sizeof(float)));
+                             glColorPointer(4, GL_FLOAT, 0, (char*)(iLayer * data->sizeX * data->sizeY * 32 * sizeof(float)));
                              glDrawElements(GL_QUADS, data->sizeX * data->sizeY * 24, GL_UNSIGNED_INT, 0);
                          }
 
@@ -757,7 +771,7 @@ namespace surface_reconstruction {
                          glTranslatef(0.0f, -data->scaleY, 0.0f);
                          float grayIntense = (float)(data->data[iRow + iColumn * data->sizeY + iLayer * data->sizeX * data->sizeY]) / maxVal;
                          grayIntense *= brightnessMult;
-                         glColor3f(grayIntense, grayIntense, grayIntense);
+                         glColor4f(grayIntense, grayIntense, grayIntense, grayIntense);
                          glCallList(theBox);
                      }
                      glTranslatef(-data->scaleX, data->sizeY * data->scaleY, 0.0f);
@@ -920,11 +934,15 @@ namespace surface_reconstruction {
 
                  // creating VBO for colors
                  float *colorBuffer;
-                 colorBuffer = new float[data->sizeX * data->sizeY * data->sizeZ * 8 * 3];
+                 colorBuffer = new float[data->sizeX * data->sizeY * data->sizeZ * 8 * 4];
                  for (size_t i = 0; i < data->sizeX * data->sizeY * data->sizeZ; ++i) {
                      float curColor = data->data[i] / maxVal * brightnessMult;
-                     for (size_t idx = 0; idx < 24; idx++) {
-                         colorBuffer[i*24 + idx] = curColor;
+                     for (size_t idx = 0; idx < 32; idx += 4) {
+                         colorBuffer[i*32 + idx+0] = curColor;
+                         colorBuffer[i*32 + idx+1] = curColor;
+                         colorBuffer[i*32 + idx+2] = curColor;
+                         colorBuffer[i*32 + idx+3] = curColor; // alpha
+                         //colorBuffer[i*32 + idx+3] = 0.5f; // alpha
                      }
                  }
 
@@ -936,7 +954,7 @@ namespace surface_reconstruction {
                  glGenBuffers(1, &tmp);
                  colorVBOID = tmp;
                  glBindBuffer(GL_ARRAY_BUFFER, colorVBOID);
-                 glBufferData(GL_ARRAY_BUFFER, sizeof(float) * data->sizeX * data->sizeY * data->sizeZ * 24, colorBuffer, GL_STATIC_DRAW);
+                 glBufferData(GL_ARRAY_BUFFER, sizeof(float) * data->sizeX * data->sizeY * data->sizeZ * 32 / 1.5, colorBuffer, GL_STATIC_DRAW);
 
                  delete colorBuffer;
              }
@@ -1028,6 +1046,9 @@ namespace surface_reconstruction {
                      }
                  }
              }
-    };
+    private: System::Void checkBoxTransperancy_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
+                 checkBoxTransperancy->Checked ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
+             }
+};
 }
 
