@@ -15,8 +15,6 @@
 #pragma comment (lib,"User32.lib")
 #pragma comment (lib,"gdi32.lib")
 
-#define OPTIMIZED_RENDER
-
 namespace surface_reconstruction {
 
     using namespace System;
@@ -93,7 +91,7 @@ namespace surface_reconstruction {
         HDC     hDC;
         HGLRC   hRC;
         HWND    hWnd;
-        
+
         GLint theBox;
         unsigned int vertexVBOID, indexVBOID, colorVBOID;
 
@@ -124,9 +122,12 @@ namespace surface_reconstruction {
     private: System::Windows::Forms::Label^  labelLayerHeight;
     private: System::Windows::Forms::Label^  labelLayerWidth;
     private: System::Windows::Forms::GroupBox^  groupBoxRenderParams;
-    private: System::Windows::Forms::TextBox^  textBoxCurrentLayer;
+    private: System::Windows::Forms::TextBox^  textBoxLayerStart;
+
     private: System::Windows::Forms::Label^  labelCurrentLayer;
-    private: System::Windows::Forms::TrackBar^  trackBarLayer;
+    private: System::Windows::Forms::TrackBar^  trackBarLayerStart;
+
+
     private: System::Windows::Forms::TextBox^  textBoxBrightnessMult;
 
     private: System::Windows::Forms::Label^  labelBrightnessMult;
@@ -134,6 +135,13 @@ namespace surface_reconstruction {
     private: System::Windows::Forms::GroupBox^  groupBoxRenderType;
     private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeVBO;
     private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeImmediate;
+    private: System::Windows::Forms::TrackBar^  trackBarLayerEnd;
+
+    private: System::Windows::Forms::TextBox^  textBoxLayerEnd;
+    private: System::Windows::Forms::Label^  labelLayerDistance;
+    private: System::Windows::Forms::TrackBar^  trackBarLayerDistance;
+
+
 
 
 
@@ -170,20 +178,26 @@ namespace surface_reconstruction {
                  this->buttonLoadData = (gcnew System::Windows::Forms::Button());
                  this->textBoxInputFile = (gcnew System::Windows::Forms::TextBox());
                  this->groupBoxRenderParams = (gcnew System::Windows::Forms::GroupBox());
+                 this->labelLayerDistance = (gcnew System::Windows::Forms::Label());
+                 this->trackBarLayerDistance = (gcnew System::Windows::Forms::TrackBar());
+                 this->trackBarLayerEnd = (gcnew System::Windows::Forms::TrackBar());
+                 this->textBoxLayerEnd = (gcnew System::Windows::Forms::TextBox());
                  this->groupBoxRenderType = (gcnew System::Windows::Forms::GroupBox());
                  this->radioButtonRenderTypeVBO = (gcnew System::Windows::Forms::RadioButton());
                  this->radioButtonRenderTypeImmediate = (gcnew System::Windows::Forms::RadioButton());
                  this->Segmentation = (gcnew System::Windows::Forms::Button());
                  this->textBoxBrightnessMult = (gcnew System::Windows::Forms::TextBox());
                  this->labelBrightnessMult = (gcnew System::Windows::Forms::Label());
-                 this->textBoxCurrentLayer = (gcnew System::Windows::Forms::TextBox());
+                 this->textBoxLayerStart = (gcnew System::Windows::Forms::TextBox());
                  this->labelCurrentLayer = (gcnew System::Windows::Forms::Label());
-                 this->trackBarLayer = (gcnew System::Windows::Forms::TrackBar());
+                 this->trackBarLayerStart = (gcnew System::Windows::Forms::TrackBar());
                  this->groupBoxRender->SuspendLayout();
                  this->groupBoxLoadData->SuspendLayout();
                  this->groupBoxRenderParams->SuspendLayout();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerDistance))->BeginInit();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerEnd))->BeginInit();
                  this->groupBoxRenderType->SuspendLayout();
-                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayer))->BeginInit();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerStart))->BeginInit();
                  this->SuspendLayout();
                  // 
                  // buttonOpenFile
@@ -349,19 +363,61 @@ namespace surface_reconstruction {
                  // 
                  this->groupBoxRenderParams->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
                      | System::Windows::Forms::AnchorStyles::Right));
+                 this->groupBoxRenderParams->Controls->Add(this->labelLayerDistance);
+                 this->groupBoxRenderParams->Controls->Add(this->trackBarLayerDistance);
+                 this->groupBoxRenderParams->Controls->Add(this->trackBarLayerEnd);
+                 this->groupBoxRenderParams->Controls->Add(this->textBoxLayerEnd);
                  this->groupBoxRenderParams->Controls->Add(this->groupBoxRenderType);
                  this->groupBoxRenderParams->Controls->Add(this->Segmentation);
                  this->groupBoxRenderParams->Controls->Add(this->textBoxBrightnessMult);
                  this->groupBoxRenderParams->Controls->Add(this->labelBrightnessMult);
-                 this->groupBoxRenderParams->Controls->Add(this->textBoxCurrentLayer);
+                 this->groupBoxRenderParams->Controls->Add(this->textBoxLayerStart);
                  this->groupBoxRenderParams->Controls->Add(this->labelCurrentLayer);
-                 this->groupBoxRenderParams->Controls->Add(this->trackBarLayer);
+                 this->groupBoxRenderParams->Controls->Add(this->trackBarLayerStart);
                  this->groupBoxRenderParams->Location = System::Drawing::Point(523, 143);
                  this->groupBoxRenderParams->Name = L"groupBoxRenderParams";
                  this->groupBoxRenderParams->Size = System::Drawing::Size(216, 292);
                  this->groupBoxRenderParams->TabIndex = 6;
                  this->groupBoxRenderParams->TabStop = false;
                  this->groupBoxRenderParams->Text = L"Параметры визуализации";
+                 // 
+                 // labelLayerDistance
+                 // 
+                 this->labelLayerDistance->AutoSize = true;
+                 this->labelLayerDistance->Location = System::Drawing::Point(10, 176);
+                 this->labelLayerDistance->Name = L"labelLayerDistance";
+                 this->labelLayerDistance->Size = System::Drawing::Size(147, 13);
+                 this->labelLayerDistance->TabIndex = 10;
+                 this->labelLayerDistance->Text = L"Расстояние между слоями:";
+                 // 
+                 // trackBarLayerDistance
+                 // 
+                 this->trackBarLayerDistance->Location = System::Drawing::Point(9, 192);
+                 this->trackBarLayerDistance->Maximum = 150;
+                 this->trackBarLayerDistance->Minimum = 1;
+                 this->trackBarLayerDistance->Name = L"trackBarLayerDistance";
+                 this->trackBarLayerDistance->Size = System::Drawing::Size(200, 45);
+                 this->trackBarLayerDistance->TabIndex = 9;
+                 this->trackBarLayerDistance->Value = 50;
+                 // 
+                 // trackBarLayerEnd
+                 // 
+                 this->trackBarLayerEnd->Location = System::Drawing::Point(6, 141);
+                 this->trackBarLayerEnd->Maximum = 0;
+                 this->trackBarLayerEnd->Name = L"trackBarLayerEnd";
+                 this->trackBarLayerEnd->Size = System::Drawing::Size(204, 45);
+                 this->trackBarLayerEnd->TabIndex = 8;
+                 this->trackBarLayerEnd->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarLayerEnd_ValueChanged);
+                 // 
+                 // textBoxLayerEnd
+                 // 
+                 this->textBoxLayerEnd->Location = System::Drawing::Point(164, 94);
+                 this->textBoxLayerEnd->Name = L"textBoxLayerEnd";
+                 this->textBoxLayerEnd->Size = System::Drawing::Size(36, 20);
+                 this->textBoxLayerEnd->TabIndex = 7;
+                 this->textBoxLayerEnd->Text = L"0";
+                 this->textBoxLayerEnd->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
+                 this->textBoxLayerEnd->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxLayerEnd_TextChanged);
                  // 
                  // groupBoxRenderType
                  // 
@@ -372,15 +428,17 @@ namespace surface_reconstruction {
                  this->groupBoxRenderType->Size = System::Drawing::Size(204, 69);
                  this->groupBoxRenderType->TabIndex = 6;
                  this->groupBoxRenderType->TabStop = false;
-                 this->groupBoxRenderType->Text = L"Тип визуализации";
+                 this->groupBoxRenderType->Text = L"Метод визуализации";
                  // 
                  // radioButtonRenderTypeVBO
                  // 
                  this->radioButtonRenderTypeVBO->AutoSize = true;
+                 this->radioButtonRenderTypeVBO->Checked = true;
                  this->radioButtonRenderTypeVBO->Location = System::Drawing::Point(7, 42);
                  this->radioButtonRenderTypeVBO->Name = L"radioButtonRenderTypeVBO";
                  this->radioButtonRenderTypeVBO->Size = System::Drawing::Size(120, 17);
                  this->radioButtonRenderTypeVBO->TabIndex = 1;
+                 this->radioButtonRenderTypeVBO->TabStop = true;
                  this->radioButtonRenderTypeVBO->Text = L"Vertex Buffer Object";
                  this->radioButtonRenderTypeVBO->UseVisualStyleBackColor = true;
                  this->radioButtonRenderTypeVBO->CheckedChanged += gcnew System::EventHandler(this, &MainForm::radioButtonRenderTypeVBO_CheckedChanged);
@@ -388,19 +446,17 @@ namespace surface_reconstruction {
                  // radioButtonRenderTypeImmediate
                  // 
                  this->radioButtonRenderTypeImmediate->AutoSize = true;
-                 this->radioButtonRenderTypeImmediate->Checked = true;
                  this->radioButtonRenderTypeImmediate->Location = System::Drawing::Point(7, 19);
                  this->radioButtonRenderTypeImmediate->Name = L"radioButtonRenderTypeImmediate";
                  this->radioButtonRenderTypeImmediate->Size = System::Drawing::Size(73, 17);
                  this->radioButtonRenderTypeImmediate->TabIndex = 0;
-                 this->radioButtonRenderTypeImmediate->TabStop = true;
                  this->radioButtonRenderTypeImmediate->Text = L"Immediate";
                  this->radioButtonRenderTypeImmediate->UseVisualStyleBackColor = true;
                  // 
                  // Segmentation
                  // 
                  this->Segmentation->Enabled = false;
-                 this->Segmentation->Location = System::Drawing::Point(9, 176);
+                 this->Segmentation->Location = System::Drawing::Point(13, 256);
                  this->Segmentation->Name = L"Segmentation";
                  this->Segmentation->Size = System::Drawing::Size(92, 23);
                  this->Segmentation->TabIndex = 5;
@@ -410,7 +466,7 @@ namespace surface_reconstruction {
                  // 
                  // textBoxBrightnessMult
                  // 
-                 this->textBoxBrightnessMult->Location = System::Drawing::Point(133, 141);
+                 this->textBoxBrightnessMult->Location = System::Drawing::Point(133, 237);
                  this->textBoxBrightnessMult->Name = L"textBoxBrightnessMult";
                  this->textBoxBrightnessMult->Size = System::Drawing::Size(67, 20);
                  this->textBoxBrightnessMult->TabIndex = 4;
@@ -421,39 +477,39 @@ namespace surface_reconstruction {
                  // labelBrightnessMult
                  // 
                  this->labelBrightnessMult->AutoSize = true;
-                 this->labelBrightnessMult->Location = System::Drawing::Point(6, 144);
+                 this->labelBrightnessMult->Location = System::Drawing::Point(10, 240);
                  this->labelBrightnessMult->Name = L"labelBrightnessMult";
                  this->labelBrightnessMult->Size = System::Drawing::Size(112, 13);
                  this->labelBrightnessMult->TabIndex = 3;
                  this->labelBrightnessMult->Text = L"Множитель яркости:";
                  // 
-                 // textBoxCurrentLayer
+                 // textBoxLayerStart
                  // 
-                 this->textBoxCurrentLayer->Location = System::Drawing::Point(133, 93);
-                 this->textBoxCurrentLayer->Name = L"textBoxCurrentLayer";
-                 this->textBoxCurrentLayer->Size = System::Drawing::Size(67, 20);
-                 this->textBoxCurrentLayer->TabIndex = 2;
-                 this->textBoxCurrentLayer->Text = L"0";
-                 this->textBoxCurrentLayer->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
-                 this->textBoxCurrentLayer->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxCurrentLayer_TextChanged);
+                 this->textBoxLayerStart->Location = System::Drawing::Point(121, 94);
+                 this->textBoxLayerStart->Name = L"textBoxLayerStart";
+                 this->textBoxLayerStart->Size = System::Drawing::Size(36, 20);
+                 this->textBoxLayerStart->TabIndex = 2;
+                 this->textBoxLayerStart->Text = L"0";
+                 this->textBoxLayerStart->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
+                 this->textBoxLayerStart->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxCurrentLayer_TextChanged);
                  // 
                  // labelCurrentLayer
                  // 
                  this->labelCurrentLayer->AutoSize = true;
                  this->labelCurrentLayer->Location = System::Drawing::Point(6, 96);
                  this->labelCurrentLayer->Name = L"labelCurrentLayer";
-                 this->labelCurrentLayer->Size = System::Drawing::Size(109, 13);
+                 this->labelCurrentLayer->Size = System::Drawing::Size(115, 13);
                  this->labelCurrentLayer->TabIndex = 1;
-                 this->labelCurrentLayer->Text = L"Визуализация слоя:";
+                 this->labelCurrentLayer->Text = L"Визуализация слоев:";
                  // 
-                 // trackBarLayer
+                 // trackBarLayerStart
                  // 
-                 this->trackBarLayer->Location = System::Drawing::Point(6, 112);
-                 this->trackBarLayer->Maximum = 0;
-                 this->trackBarLayer->Name = L"trackBarLayer";
-                 this->trackBarLayer->Size = System::Drawing::Size(204, 45);
-                 this->trackBarLayer->TabIndex = 0;
-                 this->trackBarLayer->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarLayer_ValueChanged);
+                 this->trackBarLayerStart->Location = System::Drawing::Point(6, 112);
+                 this->trackBarLayerStart->Maximum = 0;
+                 this->trackBarLayerStart->Name = L"trackBarLayerStart";
+                 this->trackBarLayerStart->Size = System::Drawing::Size(204, 45);
+                 this->trackBarLayerStart->TabIndex = 0;
+                 this->trackBarLayerStart->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarLayer_ValueChanged);
                  // 
                  // MainForm
                  // 
@@ -464,9 +520,11 @@ namespace surface_reconstruction {
                  this->Controls->Add(this->groupBoxLoadData);
                  this->Controls->Add(this->groupBoxRender);
                  this->Controls->Add(this->labelStatus);
+                 this->DoubleBuffered = true;
                  this->MinimumSize = System::Drawing::Size(640, 480);
                  this->Name = L"MainForm";
                  this->Text = L"Аццкая рисовалка";
+                 this->WindowState = System::Windows::Forms::FormWindowState::Maximized;
                  this->Load += gcnew System::EventHandler(this, &MainForm::MainForm_Load);
                  this->Resize += gcnew System::EventHandler(this, &MainForm::MainForm_Resize);
                  this->groupBoxRender->ResumeLayout(false);
@@ -474,9 +532,11 @@ namespace surface_reconstruction {
                  this->groupBoxLoadData->PerformLayout();
                  this->groupBoxRenderParams->ResumeLayout(false);
                  this->groupBoxRenderParams->PerformLayout();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerDistance))->EndInit();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerEnd))->EndInit();
                  this->groupBoxRenderType->ResumeLayout(false);
                  this->groupBoxRenderType->PerformLayout();
-                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayer))->EndInit();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerStart))->EndInit();
                  this->ResumeLayout(false);
                  this->PerformLayout();
 
@@ -489,7 +549,7 @@ namespace surface_reconstruction {
                      textBoxInputFile->ScrollToCaret();
                      angleXRotation = angleYRotation = 0.0f;
                  }
-            }
+             }
 
     private: System::Void MainForm_Load(System::Object^  sender, System::EventArgs^  e) {
                  GLuint PixelFormat;
@@ -547,7 +607,7 @@ namespace surface_reconstruction {
                  MainForm_Resize(sender, e);
 
                  if (!InitGL()) {
-                    this->labelStatus->Text = L"Failed to init GL";
+                     this->labelStatus->Text = L"Failed to init GL";
                  }
 
                  theBox = glGenLists(1);
@@ -622,80 +682,90 @@ namespace surface_reconstruction {
                  SwapBuffers(hDC);
              }
 
-             private: Void DrawGLScene() {
-                  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                  glLoadIdentity();
+    private: Void DrawGLScene() {
+                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                 glLoadIdentity();
 
-                  glTranslatef(0.0f, 0.0f, -distance);
-                  //glTranslatef(0.0f, 0.0f, -3.0f);
-                  glRotatef(90.0f, 0.0f, 0.0, 1.0f);
-                  glRotatef(angleXRotation, 1.0f, 0.0f, 0.0f);
-                  glRotatef(angleYRotation, 0.0f, 1.0f, 0.0f);
-                  /*
-                  glBegin(GL_TRIANGLES); {
-                      glColor3f((GLfloat)(rand() / (rand()+1)),
-                          (GLfloat)(rand() / (rand()+1)),
-                          (GLfloat)(rand() / (rand()+1)));
-                      glVertex3f(-1.0f, -0.4f, 0.0f);
+                 glTranslatef(0.0f, 0.0f, -distance);
+                 //glTranslatef(0.0f, 0.0f, -3.0f);
+                 glRotatef(90.0f, 0.0f, 0.0, 1.0f);
+                 glRotatef(angleXRotation, 1.0f, 0.0f, 0.0f);
+                 glRotatef(angleYRotation, 0.0f, 1.0f, 0.0f);
+                 /*
+                 glBegin(GL_TRIANGLES); {
+                 glColor3f((GLfloat)(rand() / (rand()+1)),
+                 (GLfloat)(rand() / (rand()+1)),
+                 (GLfloat)(rand() / (rand()+1)));
+                 glVertex3f(-1.0f, -0.4f, 0.0f);
 
-                      glColor3f((GLfloat)(rand() / (rand()+1)),
-                          (GLfloat)(rand() / (rand()+1)),
-                          (GLfloat)(rand() / (rand()+1)));
-                      glVertex3f( 1.0f, -0.4f, 0.0f);
+                 glColor3f((GLfloat)(rand() / (rand()+1)),
+                 (GLfloat)(rand() / (rand()+1)),
+                 (GLfloat)(rand() / (rand()+1)));
+                 glVertex3f( 1.0f, -0.4f, 0.0f);
 
-                      glColor3f((GLfloat)(rand() / (rand()+1)),
-                          (GLfloat)(rand() / (rand()+1)),
-                          (GLfloat)(rand() / (rand()+1)));
-                      glVertex3f( 0.0f,  1.0f, 0.0f);
-                  }
-                  glEnd();
-                  //*/
-                  //glColor3f(1.0f, 1.0f, 1.0f);
-                  //glCallList(theBox);
+                 glColor3f((GLfloat)(rand() / (rand()+1)),
+                 (GLfloat)(rand() / (rand()+1)),
+                 (GLfloat)(rand() / (rand()+1)));
+                 glVertex3f( 0.0f,  1.0f, 0.0f);
+                 }
+                 glEnd();
+                 //*/
+                 //glColor3f(1.0f, 1.0f, 1.0f);
+                 //glCallList(theBox);
 
-                  if (data && data->data) {
-                      if (radioButtonRenderTypeImmediate->Checked) {
-                           RenderLayer(this->trackBarLayer->Value);
-                      }
-                      else if (radioButtonRenderTypeVBO->Checked) {
-                          glBindBuffer(GL_ARRAY_BUFFER, vertexVBOID);
-                          glEnableClientState(GL_VERTEX_ARRAY);
-                          glVertexPointer(3, GL_FLOAT, 0, 0);
+                 if (data && data->data) {
+                     if (radioButtonRenderTypeImmediate->Checked) {
+                         for (size_t iLayer = trackBarLayerStart->Value; iLayer < trackBarLayerEnd->Value + 1; ++iLayer) {
+                             RenderLayer(iLayer);
+                         }
+                     }
+                     else if (radioButtonRenderTypeVBO->Checked) {
+                         glBindBuffer(GL_ARRAY_BUFFER, vertexVBOID);
+                         glEnableClientState(GL_VERTEX_ARRAY);
+                         glVertexPointer(3, GL_FLOAT, 0, 0);
 
-                          glBindBuffer(GL_ARRAY_BUFFER, colorVBOID);
-                          glEnableClientState(GL_COLOR_ARRAY);
-                          glColorPointer(3, GL_FLOAT, 0, 0);
+                         glBindBuffer(GL_ARRAY_BUFFER, colorVBOID);
+                         glEnableClientState(GL_COLOR_ARRAY);
 
-                          glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBOID);
-                          glDrawElements(GL_QUADS, data->sizeX * data->sizeY * 24, GL_UNSIGNED_INT, 0);
+                         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBOID);
 
-                          glDisableClientState(GL_VERTEX_ARRAY);
-                          glDisableClientState(GL_COLOR_ARRAY);
+                         float localSift = -((float)(trackBarLayerEnd->Value - trackBarLayerStart->Value) * data->scaleZ * trackBarLayerDistance->Value / 2.0f);
+                         glTranslatef(0.0f, 0.0f, localSift);
+                         for (size_t iLayer = trackBarLayerStart->Value; iLayer < trackBarLayerEnd->Value + 1; ++iLayer) {
+                             glTranslatef(0.0f, 0.0f, -localSift * 2 / (trackBarLayerEnd->Value - trackBarLayerStart->Value + 1));
+                             glColorPointer(3, GL_FLOAT, 0, (char*)(iLayer * data->sizeX * data->sizeY * 24 * sizeof(float)));
+                             glDrawElements(GL_QUADS, data->sizeX * data->sizeY * 24, GL_UNSIGNED_INT, 0);
+                         }
 
-                          glBindBuffer(GL_ARRAY_BUFFER, 0);
-                          glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-                      }
-                  }
-              }
+                         glDisableClientState(GL_VERTEX_ARRAY);
+                         glDisableClientState(GL_COLOR_ARRAY);
 
-              private: Void RenderLayer(size_t z) {
-                  glScalef(data->scaleX, data->scaleY, data->scaleZ);
-                  glPushMatrix();
-                  glTranslatef(((float)(data->sizeX / 2) * data->scaleX), (float)(data->sizeY / 2) * data->scaleY, ((float)(data->sizeZ / 2) - z) * data->scaleZ);
-                  for (size_t iColumn = 0; iColumn < data->sizeX; ++iColumn) {
-                      for (size_t iRow = 0; iRow < data->sizeY; ++iRow) {
-                          glTranslatef(0.0f, -data->scaleY, 0.0f);
-                          float grayIntense = (float)(data->data[iRow + iColumn * data->sizeY + z * data->sizeX * data->sizeY]) / maxVal;
-                          grayIntense *= brightnessMult;
-                          glColor3f(grayIntense, grayIntense, grayIntense);
-                          glCallList(theBox);
-                      }
-                      glTranslatef(-data->scaleX, data->sizeY * data->scaleY, 0.0f);
-                  }
-                  glPopMatrix();
-              }
+                         glBindBuffer(GL_ARRAY_BUFFER, 0);
+                         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+                     }
+                 }
+             }
 
-private: System::Void DrawTimer_Tick(System::Object^  sender, System::EventArgs^  e) {
+    private: Void RenderLayer(size_t iLayer) {
+                 glScalef(data->scaleX, data->scaleY, data->scaleZ);
+                 glPushMatrix();
+                 float localSift = -((float)(trackBarLayerEnd->Value - trackBarLayerStart->Value) * data->scaleZ * trackBarLayerDistance->Value / 2.0f);
+                 localSift -= localSift * 2 * (iLayer - trackBarLayerStart->Value) / (trackBarLayerEnd->Value - trackBarLayerStart->Value + 1);
+                 glTranslatef(((float)(data->sizeX / 2) * data->scaleX), ((float)(data->sizeY / 2) * data->scaleY), localSift);
+                 for (size_t iColumn = 0; iColumn < data->sizeX; ++iColumn) {
+                     for (size_t iRow = 0; iRow < data->sizeY; ++iRow) {
+                         glTranslatef(0.0f, -data->scaleY, 0.0f);
+                         float grayIntense = (float)(data->data[iRow + iColumn * data->sizeY + iLayer * data->sizeX * data->sizeY]) / maxVal;
+                         grayIntense *= brightnessMult;
+                         glColor3f(grayIntense, grayIntense, grayIntense);
+                         glCallList(theBox);
+                     }
+                     glTranslatef(-data->scaleX, data->sizeY * data->scaleY, 0.0f);
+                 }
+                 glPopMatrix();
+             }
+
+    private: System::Void DrawTimer_Tick(System::Object^  sender, System::EventArgs^  e) {
                  System::DateTime timeBefore = DateTime::Now;
                  DrawGLScene();
                  System::DateTime timeAfter = DateTime::Now;
@@ -704,206 +774,107 @@ private: System::Void DrawTimer_Tick(System::Object^  sender, System::EventArgs^
                  SwapBuffers(hDC);
              }
 
-private: System::Void buttonLoadData_Click(System::Object^  sender, System::EventArgs^  e) {
-             String ^pathToDataFile = this->textBoxInputFile->Text;
-             if (System::IO::File::Exists(pathToDataFile)) {
-                 pathToDataFile = pathToDataFile->Replace("\\","\\\\");
-                 if (data->LoadData((char*)Runtime::InteropServices::Marshal::StringToHGlobalAnsi(pathToDataFile).ToPointer())) {
-                     this->labelStatus->Text = L"Data was loaded.";
+    private: System::Void buttonLoadData_Click(System::Object^  sender, System::EventArgs^  e) {
+                 String ^pathToDataFile = this->textBoxInputFile->Text;
+                 if (System::IO::File::Exists(pathToDataFile)) {
+                     pathToDataFile = pathToDataFile->Replace("\\","\\\\");
+                     if (data->LoadData((char*)Runtime::InteropServices::Marshal::StringToHGlobalAnsi(pathToDataFile).ToPointer())) {
+                         this->labelStatus->Text = L"Data was loaded.";
 
-                     float fileSize = (float)(IO::FileInfo(pathToDataFile).Length >> 20);
-                     this->labelDataFileName->Text = L"Файл: " + pathToDataFile->Substring(pathToDataFile->LastIndexOf("\\")+1) +
-                                                     L" (" + fileSize + L" MB)";
+                         float fileSize = (float)(IO::FileInfo(pathToDataFile).Length >> 20);
+                         this->labelDataFileName->Text = L"Файл: " + pathToDataFile->Substring(pathToDataFile->LastIndexOf("\\")+1) +
+                             L" (" + fileSize + L" MB)";
 
-                     this->labelLayerWidth->Text = L"Ширина слоя: " + data->sizeX;
-                     this->labelLayerHeight->Text = L"Высота слоя: " + data->sizeY;
-                     this->labelLayerNum->Text = L"Кол-во слоев: " + data->sizeZ;
+                         this->labelLayerWidth->Text = L"Ширина слоя: " + data->sizeX;
+                         this->labelLayerHeight->Text = L"Высота слоя: " + data->sizeY;
+                         this->labelLayerNum->Text = L"Кол-во слоев: " + data->sizeZ;
 
-                     this->labelVoxelX->Text = L"Размер по X: " + data->scaleX;
-                     this->labelVoxelY->Text = L"Размер по Y: " + data->scaleY;
-                     this->labelVoxelZ->Text = L"Размер по Z: " + data->scaleZ;
+                         this->labelVoxelX->Text = L"Размер по X: " + data->scaleX;
+                         this->labelVoxelY->Text = L"Размер по Y: " + data->scaleY;
+                         this->labelVoxelZ->Text = L"Размер по Z: " + data->scaleZ;
 
-                     maxVal = 0;
-                     for (size_t i = 10; i < data->sizeX * data->sizeY * data->sizeZ; ++i) {
-                         if (maxVal < data->data[i]) {
-                             maxVal = data->data[i];
+                         maxVal = 0;
+                         for (size_t i = 10; i < data->sizeX * data->sizeY * data->sizeZ; ++i) {
+                             if (maxVal < data->data[i]) {
+                                 maxVal = data->data[i];
+                             }
                          }
+
+                         angleXRotation = angleYRotation = 0.0f;
+                         distance = 600.f;
+
+                         this->textBoxBrightnessMult->Text = L"30,0";
+                         brightnessMult = 30.f;
+
+                         this->trackBarLayerStart->Maximum = data->sizeZ - 1;
+                         this->trackBarLayerStart->Value = 0;
+
+                         this->trackBarLayerEnd->Maximum = data->sizeZ - 1;
+                         this->trackBarLayerEnd->Value = 0;
+
+                         radioButtonRenderTypeVBO_CheckedChanged(sender, e);
+
+                         segmentationForm->data = data;
+                         Segmentation->Enabled = true;
+                     } else {
+                         this->labelStatus->Text = "Error. Incorrect reading input data file.";
                      }
-
-                     angleXRotation = angleYRotation = 0.0f;
-                     distance = 600.f;
-
-                     this->textBoxBrightnessMult->Text = L"30,0";
-                     brightnessMult = 30.f;
-
-                     this->trackBarLayer->Maximum = data->sizeZ - 1;
-                     this->trackBarLayer->Value = 0;
-
-                     radioButtonRenderTypeVBO_CheckedChanged(sender, e);
-
-                     segmentationForm->data = data;
-                     Segmentation->Enabled = true;
                  } else {
-                     this->labelStatus->Text = "Error. Incorrect reading input data file.";
-                 }
-             } else {
-                 this->labelStatus->Text = "Error. Input data file not exist.";
-             }             
-         }
+                     this->labelStatus->Text = "Error. Input data file not exist.";
+                 }             
+             }
     private: System::Void trackBarLayer_ValueChanged(System::Object^  sender, System::EventArgs^  e) {
-                 this->textBoxCurrentLayer->Text = this->trackBarLayer->Value.ToString();
-                 radioButtonRenderTypeVBO_CheckedChanged(sender, e);
+                 if (this->trackBarLayerStart->Value <= this->trackBarLayerEnd->Value) {
+                     this->textBoxLayerStart->Text = this->trackBarLayerStart->Value.ToString();
+                 }
+                 else {
+                     this->trackBarLayerStart->Value = this->trackBarLayerEnd->Value;
+                 }
              }
 
-private: System::Void generateVBOData(unsigned int layer) {
-             float *vertexBuffer;
-             vertexBuffer = new float[data->sizeX * data->sizeY * 8 * 3];
-             for (size_t iColumn = 0; iColumn < data->sizeX; ++iColumn) {
-                 for (size_t iRow = 0; iRow < data->sizeY; ++iRow) {
-                     if (iRow == 0) {
-                         float vert[8*3] = {
-                             +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ,
-                             +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ,
-                             -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ,
-                             -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ,
-                             +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ,
-                             +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ,
-                             -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ,
-                             -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f + ((float)(data->sizeZ / 2) - layer) * data->scaleZ};
+    private: System::Void trackBarLayerEnd_ValueChanged(System::Object^  sender, System::EventArgs^  e) {
+                 if (this->trackBarLayerEnd->Value >= this->trackBarLayerStart->Value) {
+                     this->textBoxLayerEnd->Text = this->trackBarLayerEnd->Value.ToString();
+                 }
+                 else {
+                     this->trackBarLayerEnd->Value = this->trackBarLayerStart->Value;
+                 }
+             }
 
-                         size_t base = iColumn * data->sizeY;
-                         memcpy(vertexBuffer + base * 8 * 3, vert, sizeof(vert));
+    private: System::Void generateVBOData() {
+                 // creating VBO for vertecies
+                 float *vertexBuffer;
+                 vertexBuffer = new float[data->sizeX * data->sizeY * 8 * 3];
+                 for (size_t iColumn = 0; iColumn < data->sizeX; ++iColumn) {
+                     for (size_t iRow = 0; iRow < data->sizeY; ++iRow) {
+                         if (iRow == 0) {
+                             float vert[8*3] = {
+                                 +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f,
+                                 +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f,
+                                 -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f,
+                                 -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f,
+                                 +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f,
+                                 +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f,
+                                 -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f,
+                                 -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f};
 
-                         continue;
-                     }
-                     else {
-                         unsigned int curIndex = iRow + iColumn * data->sizeY;
-                         memcpy(vertexBuffer + (curIndex) * 8 * 3,
-                                vertexBuffer + (curIndex - 1) * 8 * 3,
-                                sizeof(float) * 8 * 3);
-                         for (int i = 1; i < 24; i += 3) {
-                             vertexBuffer[curIndex * 8 * 3 + i] -= data->scaleY;
+                                 size_t base = iColumn * data->sizeY;
+                                 memcpy(vertexBuffer + base * 8 * 3, vert, sizeof(vert));
+
+                                 continue;
+                         }
+                         else {
+                             unsigned int curIndex = iRow + iColumn * data->sizeY;
+                             memcpy(vertexBuffer + (curIndex) * 8 * 3,
+                                 vertexBuffer + (curIndex - 1) * 8 * 3,
+                                 sizeof(float) * 8 * 3);
+                             for (int i = 1; i < 24; i += 3) {
+                                 vertexBuffer[curIndex * 8 * 3 + i] -= data->scaleY;
+                             }
                          }
                      }
                  }
-             }
 
-             unsigned int ind[24] = {0, 1, 2, 3,
-                                     3, 2, 6, 7,
-                                     7, 6, 5, 4,
-                                     4, 5, 1, 0,
-                                     4, 0, 3, 7,
-                                     1, 5, 6, 2};
-
-             unsigned int *indicesBuffer;
-             indicesBuffer = new unsigned int[data->sizeX * data->sizeY * 6 * 4];
-             for (size_t i = 0; i < data->sizeX * data->sizeY * 24; i += 24) {
-                 memcpy(indicesBuffer + i, ind, sizeof(ind));
-                 for (size_t j = 0; j < 24; ++j) {
-                     ind[j] += 8;
-                 }
-             }
-
-             float *colorBuffer;
-             colorBuffer = new float[data->sizeX * data->sizeY * 8 * 3];
-             for (size_t i = data->sizeX * data->sizeY * layer; i < data->sizeX * data->sizeY * (layer + 1); ++i) {
-                 float curColor = data->data[i] / maxVal * brightnessMult;
-                 for (size_t idx = 0; idx < 24; idx++) {
-                     colorBuffer[(i - data->sizeX * data->sizeY * layer)*24 + idx] = curColor;
-                 }
-             }
-
-             unsigned int tmp;
-
-             if (vertexVBOID != 0) {
-                 tmp = vertexVBOID;
-                 glDeleteBuffers(1, &tmp);
-             }
-
-             if (colorVBOID != 0) {
-                 tmp = colorVBOID;
-                 glDeleteBuffers(1, &tmp);
-             }
-
-             if (indexVBOID != 0) {
-                 tmp = indexVBOID;
-                 glDeleteBuffers(1, &tmp);
-             }
-            
-             glGenBuffers(1, &tmp);
-             vertexVBOID = tmp;
-             glBindBuffer(GL_ARRAY_BUFFER, vertexVBOID);
-             glBufferData(GL_ARRAY_BUFFER, sizeof(float) * data->sizeX * data->sizeY * 24, vertexBuffer, GL_STATIC_DRAW);
-
-             glGenBuffers(1, &tmp);
-             colorVBOID = tmp;
-             glBindBuffer(GL_ARRAY_BUFFER, colorVBOID);
-             glBufferData(GL_ARRAY_BUFFER, sizeof(float) * data->sizeX * data->sizeY * 24, colorBuffer, GL_STATIC_DRAW);
-
-             glGenBuffers(1, &tmp);
-             indexVBOID = tmp;
-             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBOID);
-             glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * data->sizeX * data->sizeY * 24, indicesBuffer, GL_STATIC_DRAW);
-
-             delete vertexBuffer;
-             delete indicesBuffer;
-             delete colorBuffer;
-         }
-
-private: System::Void textBoxCurrentLayer_TextChanged(System::Object^  sender, System::EventArgs^  e) {
-             Int32 curValue;
-             try {
-                 curValue = Int32::Parse(this->textBoxCurrentLayer->Text);
-             } catch (...) {
-                 this->labelStatus->Text = "Error. Layer value should be unsigned int.";
-                 return;
-             }
-             if (curValue >= 0 && curValue < data->sizeZ) {
-                 this->trackBarLayer->Value = curValue;
-             } else {
-                 this->labelStatus->Text = "Error. Layer should be in range [0;" + (data->sizeZ - 1) + L"].";
-             }
-         }
-
-private: System::Void GLWindow_MouseMove(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) {
-             if (e->Button == Windows::Forms::MouseButtons::Left) {
-                 Point tmpPosition = mousePosition;
-                 mousePosition = e->Location;
-                 angleXRotation -= tmpPosition.X - mousePosition.X;
-                 angleYRotation += tmpPosition.Y - mousePosition.Y;
-             }
-         }
-
-private: System::Void GLWindow_MouseDown(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) {
-             if (e->Button == Windows::Forms::MouseButtons::Left) {
-                mousePosition = e->Location;
-             }
-         }
-
-private: System::Void GLWindow_MouseWheel(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) {
-             distance *= (e->Delta < 0) ? (float)Math::Abs(0.66 * e->Delta / 120) :
-                                          (float)Math::Abs(1.33 * e->Delta / 120);
-         }
-
-private: System::Void textBoxBrightnessMult_TextChanged(System::Object^  sender, System::EventArgs^  e) {
-             try {
-                 brightnessMult = (float)Double::Parse(this->textBoxBrightnessMult->Text);
-             } catch (...) {
-                 this->labelStatus->Text = L"Invalid number format for brightness mult.";
-             }
-         }
-private: System::Void GLWindow_Click(System::Object^  sender, System::EventArgs^  e) {
-             this->GLWindow->Focus();
-         }
-private: System::Void Segmentation_Click(System::Object^  sender, System::EventArgs^  e) {
-             segmentationForm->StaticDelInst = gcnew MyDel(this, &MainForm::ChangeData);
-             segmentationForm->Show();             
-         }
-private: System::Void radioButtonRenderTypeVBO_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
-             if (radioButtonRenderTypeVBO->Checked) {
-                 generateVBOData(this->trackBarLayer->Value);
-             }
-             else {
                  unsigned int tmp;
 
                  if (vertexVBOID != 0) {
@@ -911,17 +882,152 @@ private: System::Void radioButtonRenderTypeVBO_CheckedChanged(System::Object^  s
                      glDeleteBuffers(1, &tmp);
                  }
 
-                 if (colorVBOID != 0) {
-                     tmp = colorVBOID;
-                     glDeleteBuffers(1, &tmp);
+                 glGenBuffers(1, &tmp);
+                 vertexVBOID = tmp;
+                 glBindBuffer(GL_ARRAY_BUFFER, vertexVBOID);
+                 glBufferData(GL_ARRAY_BUFFER, sizeof(float) * data->sizeX * data->sizeY * 24, vertexBuffer, GL_STATIC_DRAW);
+
+                 delete vertexBuffer;
+
+                 // creating VBO for indicies
+                 unsigned int ind[24] = {0, 1, 2, 3,
+                     3, 2, 6, 7,
+                     7, 6, 5, 4,
+                     4, 5, 1, 0,
+                     4, 0, 3, 7,
+                     1, 5, 6, 2};
+
+                 unsigned int *indicesBuffer;
+                 indicesBuffer = new unsigned int[data->sizeX * data->sizeY * 6 * 4];
+                 for (size_t i = 0; i < data->sizeX * data->sizeY * 24; i += 24) {
+                     memcpy(indicesBuffer + i, ind, sizeof(ind));
+                     for (size_t j = 0; j < 24; ++j) {
+                         ind[j] += 8;
+                     }
                  }
 
                  if (indexVBOID != 0) {
                      tmp = indexVBOID;
                      glDeleteBuffers(1, &tmp);
                  }
+
+                 glGenBuffers(1, &tmp);
+                 indexVBOID = tmp;
+                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBOID);
+                 glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * data->sizeX * data->sizeY * 24, indicesBuffer, GL_STATIC_DRAW);
+
+                 delete indicesBuffer;
+
+                 // creating VBO for colors
+                 float *colorBuffer;
+                 colorBuffer = new float[data->sizeX * data->sizeY * data->sizeZ * 8 * 3];
+                 for (size_t i = 0; i < data->sizeX * data->sizeY * data->sizeZ; ++i) {
+                     float curColor = data->data[i] / maxVal * brightnessMult;
+                     for (size_t idx = 0; idx < 24; idx++) {
+                         colorBuffer[i*24 + idx] = curColor;
+                     }
+                 }
+
+                 if (colorVBOID != 0) {
+                     tmp = colorVBOID;
+                     glDeleteBuffers(1, &tmp);
+                 }
+
+                 glGenBuffers(1, &tmp);
+                 colorVBOID = tmp;
+                 glBindBuffer(GL_ARRAY_BUFFER, colorVBOID);
+                 glBufferData(GL_ARRAY_BUFFER, sizeof(float) * data->sizeX * data->sizeY * data->sizeZ * 24, colorBuffer, GL_STATIC_DRAW);
+
+                 delete colorBuffer;
              }
-         }
-	};
+
+    private: System::Void textBoxCurrentLayer_TextChanged(System::Object^  sender, System::EventArgs^  e) {
+                 Int32 curValue;
+                 try {
+                     curValue = Int32::Parse(this->textBoxLayerStart->Text);
+                 } catch (...) {
+                     this->labelStatus->Text = "Error. Layer value should be unsigned int.";
+                     return;
+                 }
+                 if (curValue >= 0 && curValue < Int32::Parse(this->textBoxLayerEnd->Text)) {
+                     this->trackBarLayerStart->Value = curValue;
+                 } else {
+                     this->labelStatus->Text = "Error. Layer should be in range [0;" + this->textBoxLayerEnd->Text + L"].";
+                 }
+             }
+
+    private: System::Void textBoxLayerEnd_TextChanged(System::Object^  sender, System::EventArgs^  e) {
+                 Int32 curValue;
+                 try {
+                     curValue = Int32::Parse(this->textBoxLayerEnd->Text);
+                 } catch (...) {
+                     this->labelStatus->Text = "Error. Layer value should be unsigned int.";
+                     return;
+                 }
+                 if (curValue >= Int32::Parse(this->textBoxLayerStart->Text) && curValue < data->sizeZ) {
+                     this->trackBarLayerEnd->Value = curValue;
+                 } else {
+                     this->labelStatus->Text = "Error. Layer should be in range [" + this->textBoxLayerEnd->Text +";" + (data->sizeZ - 1) + L"].";
+                 }
+             }
+
+    private: System::Void GLWindow_MouseMove(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) {
+                 if (e->Button == Windows::Forms::MouseButtons::Left) {
+                     Point tmpPosition = mousePosition;
+                     mousePosition = e->Location;
+                     angleXRotation -= tmpPosition.X - mousePosition.X;
+                     angleYRotation += tmpPosition.Y - mousePosition.Y;
+                 }
+             }
+
+    private: System::Void GLWindow_MouseDown(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) {
+                 if (e->Button == Windows::Forms::MouseButtons::Left) {
+                     mousePosition = e->Location;
+                 }
+             }
+
+    private: System::Void GLWindow_MouseWheel(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) {
+                 distance *= (e->Delta < 0) ? (float)Math::Abs(0.66 * e->Delta / 120) :
+                     (float)Math::Abs(1.33 * e->Delta / 120);
+             }
+
+    private: System::Void textBoxBrightnessMult_TextChanged(System::Object^  sender, System::EventArgs^  e) {
+                 try {
+                     brightnessMult = (float)Double::Parse(this->textBoxBrightnessMult->Text);
+                 } catch (...) {
+                     this->labelStatus->Text = L"Invalid number format for brightness mult.";
+                 }
+             }
+    private: System::Void GLWindow_Click(System::Object^  sender, System::EventArgs^  e) {
+                 this->GLWindow->Focus();
+             }
+    private: System::Void Segmentation_Click(System::Object^  sender, System::EventArgs^  e) {
+                 segmentationForm->StaticDelInst = gcnew MyDel(this, &MainForm::ChangeData);
+                 segmentationForm->Show();             
+             }
+    private: System::Void radioButtonRenderTypeVBO_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
+                 if (radioButtonRenderTypeVBO->Checked) {
+                     generateVBOData();
+                 }
+                 else {
+                     unsigned int tmp;
+
+                     if (vertexVBOID != 0) {
+                         tmp = vertexVBOID;
+                         glDeleteBuffers(1, &tmp);
+                     }
+
+                     if (colorVBOID != 0) {
+                         tmp = colorVBOID;
+                         glDeleteBuffers(1, &tmp);
+                     }
+
+                     if (indexVBOID != 0) {
+                         tmp = indexVBOID;
+                         glDeleteBuffers(1, &tmp);
+                     }
+                 }
+             }
+    };
 }
 
