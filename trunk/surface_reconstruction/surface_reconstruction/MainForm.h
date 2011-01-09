@@ -56,6 +56,8 @@ namespace surface_reconstruction {
 
         ~MainForm()
         {
+            ReleaseTextures();
+
             if (hRC) {
                 wglMakeCurrent(NULL,NULL);
                 wglDeleteContext(hRC);
@@ -68,6 +70,13 @@ namespace surface_reconstruction {
                 delete components;
             }
         }
+    private: void ReleaseTextures() {
+                 if (layerTextures) { 
+                    glDeleteTextures(data->sizeZ, layerTextures);
+                    delete layerTextures;
+                    layerTextures = 0;
+                 }
+              }
     private: System::Windows::Forms::Button^  buttonOpenFile;
     protected: 
 
@@ -93,11 +102,13 @@ namespace surface_reconstruction {
         HWND    hWnd;
 
         GLint theBox;
-        unsigned int vertexVBOID, indexVBOID, colorVBOID;
+        GLuint vertexVBOID, indexVBOID, colorVBOID;
+        GLuint *layerTextures;
 
         float angleXRotation, angleYRotation;
         Point mousePosition;
         float distance;
+        float depth;
 
         float maxVal;
         float brightnessMult;
@@ -141,6 +152,9 @@ namespace surface_reconstruction {
     private: System::Windows::Forms::Label^  labelLayerDistance;
     private: System::Windows::Forms::TrackBar^  trackBarLayerDistance;
 private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
+private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeTexture;
+private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
+
 
 
 
@@ -179,12 +193,14 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  this->buttonLoadData = (gcnew System::Windows::Forms::Button());
                  this->textBoxInputFile = (gcnew System::Windows::Forms::TextBox());
                  this->groupBoxRenderParams = (gcnew System::Windows::Forms::GroupBox());
+                 this->checkBoxDepthTest = (gcnew System::Windows::Forms::CheckBox());
                  this->checkBoxTransperancy = (gcnew System::Windows::Forms::CheckBox());
                  this->labelLayerDistance = (gcnew System::Windows::Forms::Label());
                  this->trackBarLayerDistance = (gcnew System::Windows::Forms::TrackBar());
                  this->trackBarLayerEnd = (gcnew System::Windows::Forms::TrackBar());
                  this->textBoxLayerEnd = (gcnew System::Windows::Forms::TextBox());
                  this->groupBoxRenderType = (gcnew System::Windows::Forms::GroupBox());
+                 this->radioButtonRenderTypeTexture = (gcnew System::Windows::Forms::RadioButton());
                  this->radioButtonRenderTypeVBO = (gcnew System::Windows::Forms::RadioButton());
                  this->radioButtonRenderTypeImmediate = (gcnew System::Windows::Forms::RadioButton());
                  this->Segmentation = (gcnew System::Windows::Forms::Button());
@@ -365,6 +381,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  // 
                  this->groupBoxRenderParams->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
                      | System::Windows::Forms::AnchorStyles::Right));
+                 this->groupBoxRenderParams->Controls->Add(this->checkBoxDepthTest);
                  this->groupBoxRenderParams->Controls->Add(this->checkBoxTransperancy);
                  this->groupBoxRenderParams->Controls->Add(this->labelLayerDistance);
                  this->groupBoxRenderParams->Controls->Add(this->trackBarLayerDistance);
@@ -384,21 +401,34 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  this->groupBoxRenderParams->TabStop = false;
                  this->groupBoxRenderParams->Text = L"Параметры визуализации";
                  // 
+                 // checkBoxDepthTest
+                 // 
+                 this->checkBoxDepthTest->AutoSize = true;
+                 this->checkBoxDepthTest->Checked = true;
+                 this->checkBoxDepthTest->CheckState = System::Windows::Forms::CheckState::Checked;
+                 this->checkBoxDepthTest->Enabled = false;
+                 this->checkBoxDepthTest->Location = System::Drawing::Point(103, 184);
+                 this->checkBoxDepthTest->Name = L"checkBoxDepthTest";
+                 this->checkBoxDepthTest->Size = System::Drawing::Size(97, 17);
+                 this->checkBoxDepthTest->TabIndex = 12;
+                 this->checkBoxDepthTest->Text = L"DEPTH_TEST";
+                 this->checkBoxDepthTest->UseVisualStyleBackColor = true;
+                 // 
                  // checkBoxTransperancy
                  // 
                  this->checkBoxTransperancy->AutoSize = true;
-                 this->checkBoxTransperancy->Location = System::Drawing::Point(154, 175);
+                 this->checkBoxTransperancy->Location = System::Drawing::Point(13, 184);
                  this->checkBoxTransperancy->Name = L"checkBoxTransperancy";
-                 this->checkBoxTransperancy->Size = System::Drawing::Size(56, 17);
+                 this->checkBoxTransperancy->Size = System::Drawing::Size(91, 17);
                  this->checkBoxTransperancy->TabIndex = 11;
-                 this->checkBoxTransperancy->Text = L"Trans.";
+                 this->checkBoxTransperancy->Text = L"Transperancy";
                  this->checkBoxTransperancy->UseVisualStyleBackColor = true;
                  this->checkBoxTransperancy->CheckedChanged += gcnew System::EventHandler(this, &MainForm::checkBoxTransperancy_CheckedChanged);
                  // 
                  // labelLayerDistance
                  // 
                  this->labelLayerDistance->AutoSize = true;
-                 this->labelLayerDistance->Location = System::Drawing::Point(10, 176);
+                 this->labelLayerDistance->Location = System::Drawing::Point(10, 204);
                  this->labelLayerDistance->Name = L"labelLayerDistance";
                  this->labelLayerDistance->Size = System::Drawing::Size(147, 13);
                  this->labelLayerDistance->TabIndex = 10;
@@ -406,7 +436,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  // 
                  // trackBarLayerDistance
                  // 
-                 this->trackBarLayerDistance->Location = System::Drawing::Point(9, 192);
+                 this->trackBarLayerDistance->Location = System::Drawing::Point(9, 220);
                  this->trackBarLayerDistance->Maximum = 150;
                  this->trackBarLayerDistance->Minimum = 1;
                  this->trackBarLayerDistance->Name = L"trackBarLayerDistance";
@@ -416,7 +446,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  // 
                  // trackBarLayerEnd
                  // 
-                 this->trackBarLayerEnd->Location = System::Drawing::Point(6, 141);
+                 this->trackBarLayerEnd->Location = System::Drawing::Point(6, 156);
                  this->trackBarLayerEnd->Maximum = 0;
                  this->trackBarLayerEnd->Name = L"trackBarLayerEnd";
                  this->trackBarLayerEnd->Size = System::Drawing::Size(204, 45);
@@ -425,7 +455,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  // 
                  // textBoxLayerEnd
                  // 
-                 this->textBoxLayerEnd->Location = System::Drawing::Point(164, 94);
+                 this->textBoxLayerEnd->Location = System::Drawing::Point(164, 109);
                  this->textBoxLayerEnd->Name = L"textBoxLayerEnd";
                  this->textBoxLayerEnd->Size = System::Drawing::Size(36, 20);
                  this->textBoxLayerEnd->TabIndex = 7;
@@ -435,24 +465,35 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  // 
                  // groupBoxRenderType
                  // 
+                 this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeTexture);
                  this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeVBO);
                  this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeImmediate);
                  this->groupBoxRenderType->Location = System::Drawing::Point(6, 19);
                  this->groupBoxRenderType->Name = L"groupBoxRenderType";
-                 this->groupBoxRenderType->Size = System::Drawing::Size(204, 69);
+                 this->groupBoxRenderType->Size = System::Drawing::Size(204, 89);
                  this->groupBoxRenderType->TabIndex = 6;
                  this->groupBoxRenderType->TabStop = false;
                  this->groupBoxRenderType->Text = L"Метод визуализации";
                  // 
+                 // radioButtonRenderTypeTexture
+                 // 
+                 this->radioButtonRenderTypeTexture->AutoSize = true;
+                 this->radioButtonRenderTypeTexture->Checked = true;
+                 this->radioButtonRenderTypeTexture->Location = System::Drawing::Point(7, 65);
+                 this->radioButtonRenderTypeTexture->Name = L"radioButtonRenderTypeTexture";
+                 this->radioButtonRenderTypeTexture->Size = System::Drawing::Size(148, 17);
+                 this->radioButtonRenderTypeTexture->TabIndex = 2;
+                 this->radioButtonRenderTypeTexture->TabStop = true;
+                 this->radioButtonRenderTypeTexture->Text = L"Использовать текстуры";
+                 this->radioButtonRenderTypeTexture->UseVisualStyleBackColor = true;
+                 // 
                  // radioButtonRenderTypeVBO
                  // 
                  this->radioButtonRenderTypeVBO->AutoSize = true;
-                 this->radioButtonRenderTypeVBO->Checked = true;
                  this->radioButtonRenderTypeVBO->Location = System::Drawing::Point(7, 42);
                  this->radioButtonRenderTypeVBO->Name = L"radioButtonRenderTypeVBO";
                  this->radioButtonRenderTypeVBO->Size = System::Drawing::Size(120, 17);
                  this->radioButtonRenderTypeVBO->TabIndex = 1;
-                 this->radioButtonRenderTypeVBO->TabStop = true;
                  this->radioButtonRenderTypeVBO->Text = L"Vertex Buffer Object";
                  this->radioButtonRenderTypeVBO->UseVisualStyleBackColor = true;
                  this->radioButtonRenderTypeVBO->CheckedChanged += gcnew System::EventHandler(this, &MainForm::radioButtonRenderTypeVBO_CheckedChanged);
@@ -470,7 +511,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  // Segmentation
                  // 
                  this->Segmentation->Enabled = false;
-                 this->Segmentation->Location = System::Drawing::Point(13, 256);
+                 this->Segmentation->Location = System::Drawing::Point(13, 284);
                  this->Segmentation->Name = L"Segmentation";
                  this->Segmentation->Size = System::Drawing::Size(92, 23);
                  this->Segmentation->TabIndex = 5;
@@ -480,7 +521,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  // 
                  // textBoxBrightnessMult
                  // 
-                 this->textBoxBrightnessMult->Location = System::Drawing::Point(133, 237);
+                 this->textBoxBrightnessMult->Location = System::Drawing::Point(133, 265);
                  this->textBoxBrightnessMult->Name = L"textBoxBrightnessMult";
                  this->textBoxBrightnessMult->Size = System::Drawing::Size(67, 20);
                  this->textBoxBrightnessMult->TabIndex = 4;
@@ -491,7 +532,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  // labelBrightnessMult
                  // 
                  this->labelBrightnessMult->AutoSize = true;
-                 this->labelBrightnessMult->Location = System::Drawing::Point(10, 240);
+                 this->labelBrightnessMult->Location = System::Drawing::Point(10, 268);
                  this->labelBrightnessMult->Name = L"labelBrightnessMult";
                  this->labelBrightnessMult->Size = System::Drawing::Size(112, 13);
                  this->labelBrightnessMult->TabIndex = 3;
@@ -499,7 +540,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  // 
                  // textBoxLayerStart
                  // 
-                 this->textBoxLayerStart->Location = System::Drawing::Point(121, 94);
+                 this->textBoxLayerStart->Location = System::Drawing::Point(121, 109);
                  this->textBoxLayerStart->Name = L"textBoxLayerStart";
                  this->textBoxLayerStart->Size = System::Drawing::Size(36, 20);
                  this->textBoxLayerStart->TabIndex = 2;
@@ -510,7 +551,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  // labelCurrentLayer
                  // 
                  this->labelCurrentLayer->AutoSize = true;
-                 this->labelCurrentLayer->Location = System::Drawing::Point(6, 96);
+                 this->labelCurrentLayer->Location = System::Drawing::Point(6, 111);
                  this->labelCurrentLayer->Name = L"labelCurrentLayer";
                  this->labelCurrentLayer->Size = System::Drawing::Size(115, 13);
                  this->labelCurrentLayer->TabIndex = 1;
@@ -518,7 +559,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  // 
                  // trackBarLayerStart
                  // 
-                 this->trackBarLayerStart->Location = System::Drawing::Point(6, 112);
+                 this->trackBarLayerStart->Location = System::Drawing::Point(6, 127);
                  this->trackBarLayerStart->Maximum = 0;
                  this->trackBarLayerStart->Name = L"trackBarLayerStart";
                  this->trackBarLayerStart->Size = System::Drawing::Size(204, 45);
@@ -624,55 +665,58 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                      this->labelStatus->Text = L"Failed to init GL";
                  }
 
+                 depth = 10.0f;
                  theBox = glGenLists(1);
                  glNewList(theBox, GL_COMPILE);
                  glBegin(GL_QUADS); {
                      // front face
                      //glNormal3f(0.0f, 0.0f, 1.0f);
-                     glVertex3f(0.5f, 0.5f, 0.5f);
-                     glVertex3f(0.5f, -0.5f, 0.5f);
-                     glVertex3f(-0.5f, -0.5f, 0.5f);
-                     glVertex3f(-0.5f, 0.5f, 0.5f);
+                     glVertex3f(0.5f, 0.5f, 0.5f * depth);
+                     glVertex3f(0.5f, -0.5f, 0.5f * depth);
+                     glVertex3f(-0.5f, -0.5f, 0.5f * depth);
+                     glVertex3f(-0.5f, 0.5f, 0.5f * depth);
 
                      // left face
                      //glNormal3f(-1.0f, 0.0f, 0.0f);
-                     glVertex3f(-0.5f, 0.5f, 0.5f);
-                     glVertex3f(-0.5f, -0.5f, 0.5f);
-                     glVertex3f(-0.5f, -0.5f, -0.5f);
-                     glVertex3f(-0.5f, 0.5f, -0.5f);
+                     glVertex3f(-0.5f, 0.5f, 0.5f * depth);
+                     glVertex3f(-0.5f, -0.5f, 0.5f * depth);
+                     glVertex3f(-0.5f, -0.5f, -0.5f * depth);
+                     glVertex3f(-0.5f, 0.5f, -0.5f * depth);
 
                      // back face
                      //glNormal3f(0.0f, 0.0f, -1.0f);
-                     glVertex3f(-0.5f, 0.5f, -0.5f);
-                     glVertex3f(-0.5f, -0.5f, -0.5f);
-                     glVertex3f(0.5f, -0.5f, -0.5f);
-                     glVertex3f(0.5f, 0.5f, -0.5f);
+                     glVertex3f(-0.5f, 0.5f, -0.5f * depth);
+                     glVertex3f(-0.5f, -0.5f, -0.5f * depth);
+                     glVertex3f(0.5f, -0.5f, -0.5f * depth);
+                     glVertex3f(0.5f, 0.5f, -0.5f * depth);
 
                      // right face
                      //glNormal3f(1.0f, 0.0f, 0.0f);
-                     glVertex3f(0.5f, 0.5f, -0.5f);
-                     glVertex3f(0.5f, -0.5f, -0.5f);
-                     glVertex3f(0.5f, -0.5f, 0.5f);
-                     glVertex3f(0.5f, 0.5f, 0.5f);
+                     glVertex3f(0.5f, 0.5f, -0.5f * depth);
+                     glVertex3f(0.5f, -0.5f, -0.5f * depth);
+                     glVertex3f(0.5f, -0.5f, 0.5f * depth);
+                     glVertex3f(0.5f, 0.5f, 0.5f * depth);
 
                      // top face
                      //glNormal3f(0.0f, 1.0f, 0.0f);
-                     glVertex3f(-0.5f, 0.5f, -0.5f);
-                     glVertex3f(0.5f, 0.5f, -0.5f);
-                     glVertex3f(0.5f, 0.5f, 0.5f);
-                     glVertex3f(-0.5f, 0.5f, 0.5f);
+                     glVertex3f(-0.5f, 0.5f, -0.5f * depth);
+                     glVertex3f(0.5f, 0.5f, -0.5f * depth);
+                     glVertex3f(0.5f, 0.5f, 0.5f * depth);
+                     glVertex3f(-0.5f, 0.5f, 0.5f * depth);
 
                      // bottom face
                      //glNormal3f(0.0f, -1.0f, 0.0f);
-                     glVertex3f(-0.5f, -0.5f, 0.5f);
-                     glVertex3f(0.5f, -0.5f, 0.5f);
-                     glVertex3f(0.5f, -0.5f, -0.5f);
-                     glVertex3f(-0.5f, -0.5f, -0.5f);
+                     glVertex3f(-0.5f, -0.5f, 0.5f * depth);
+                     glVertex3f(0.5f, -0.5f, 0.5f * depth);
+                     glVertex3f(0.5f, -0.5f, -0.5f * depth);
+                     glVertex3f(-0.5f, -0.5f, -0.5f * depth);
                  }
                  glEnd();
                  glEndList();
 
                  data = new ScanData();
+                 layerTextures = 0;
+                 vertexVBOID = indexVBOID = colorVBOID = 0;
              }
 
     private: System::Void MainForm_Resize(System::Object^  sender, System::EventArgs^  e) {
@@ -727,6 +771,12 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  //glColor3f(1.0f, 1.0f, 1.0f);
                  //glCallList(theBox);
 
+                 if (checkBoxTransperancy->Checked) {
+                     glEnable(GL_BLEND);
+                     if (checkBoxDepthTest->Checked) {
+                         glDisable(GL_DEPTH_TEST);
+                     }
+                 }
                  if (data && data->data) {
                      if (radioButtonRenderTypeImmediate->Checked) {
                          for (size_t iLayer = trackBarLayerStart->Value; iLayer < trackBarLayerEnd->Value + 1; ++iLayer) {
@@ -756,6 +806,31 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
 
                          glBindBuffer(GL_ARRAY_BUFFER, 0);
                          glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+                     }
+                     else if (radioButtonRenderTypeTexture->Checked) {
+                         float localDepth = -((float)(trackBarLayerEnd->Value - trackBarLayerStart->Value) * data->scaleZ * trackBarLayerDistance->Value / 2.0f);
+                         float width = (float)(data->sizeX / 2) * data->scaleX;
+                         float height = (float)(data->sizeY / 2) * data->scaleY;
+                         
+                         for (size_t iLayer = trackBarLayerStart->Value; iLayer < trackBarLayerEnd->Value + 1; ++iLayer) {
+                             glTranslatef(0.0f, 0.0f, -localDepth * 2 / (trackBarLayerEnd->Value - trackBarLayerStart->Value + 1));
+                             glBindTexture(GL_TEXTURE_2D, layerTextures[iLayer]);
+                             glBegin(GL_QUADS); {
+                                 glTexCoord2f(1.0f, 1.0f); glVertex3f(-width, -height, localDepth);
+                                 glTexCoord2f(1.0f, 0.0f); glVertex3f( width, -height, localDepth);
+                                 glTexCoord2f(0.0f, 0.0f); glVertex3f( width,  height, localDepth);
+                                 glTexCoord2f(0.0f, 1.0f); glVertex3f(-width,  height, localDepth);
+                             } glEnd();
+                         }
+
+                         glBindTexture(GL_TEXTURE_2D, 0);
+                     }
+                 }
+
+                 if (checkBoxTransperancy->Checked) {
+                     glDisable(GL_BLEND);
+                     if (checkBoxDepthTest->Checked) {
+                        glEnable(GL_DEPTH_TEST);
                      }
                  }
              }
@@ -828,6 +903,8 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
 
                          radioButtonRenderTypeVBO_CheckedChanged(sender, e);
 
+                         generateTextures();
+
                          segmentationForm->data = data;
                          Segmentation->Enabled = true;
                      } else {
@@ -855,6 +932,36 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  }
              }
 
+    private: System::Void generateTextures() {
+                 ReleaseTextures();
+
+                 layerTextures = new GLuint[data->sizeZ];
+                 glGenTextures(data->sizeZ, layerTextures);
+
+                 float *tmp = new float[data->sizeX * data->sizeY * 2];
+                 for (size_t iLayer = 0; iLayer < data->sizeZ; ++iLayer) {
+                     for (size_t i = 0; i < data->sizeX * data->sizeY *2; i += 2) {
+                         tmp[i] = data->data[i / 2 + iLayer * data->sizeX * data->sizeY] * brightnessMult / maxVal;
+                         tmp[i + 1] = tmp[i];
+                     }
+
+                     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                     glBindTexture(GL_TEXTURE_2D, layerTextures[iLayer]);
+
+                     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+
+                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP);
+                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+                     //glTexImage2D(GL_TEXTURE_2D, 0, 1, data->sizeX, data->sizeY, 0, GL_INTENSITY, GL_SHORT, data->data + iLayer * data->sizeX * data->sizeY * sizeof(short)); // не работает, сцуко! :(
+                     glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, data->sizeX, data->sizeY, 0, GL_LUMINANCE_ALPHA, GL_FLOAT, tmp);
+                 }
+
+                 delete tmp;
+             }
+
     private: System::Void generateVBOData() {
                  // creating VBO for vertecies
                  float *vertexBuffer;
@@ -863,14 +970,14 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                      for (size_t iRow = 0; iRow < data->sizeY; ++iRow) {
                          if (iRow == 0) {
                              float vert[8*3] = {
-                                 +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f,
-                                 +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f,
-                                 -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f,
-                                 -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f,
-                                 +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f,
-                                 +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f,
-                                 -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f,
-                                 -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f};
+                                 +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f * depth,
+                                 +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f * depth,
+                                 -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f * depth,
+                                 -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, -0.5f * depth,
+                                 +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f * depth,
+                                 +0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f * depth,
+                                 -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), -0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f * depth,
+                                 -0.5f +(((float)(data->sizeX / 2) - iColumn) * data->scaleX), +0.5f + (float)(data->sizeY / 2) * data->scaleY, +0.5f * depth};
 
                                  size_t base = iColumn * data->sizeY;
                                  memcpy(vertexBuffer + base * 8 * 3, vert, sizeof(vert));
@@ -954,7 +1061,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                  glGenBuffers(1, &tmp);
                  colorVBOID = tmp;
                  glBindBuffer(GL_ARRAY_BUFFER, colorVBOID);
-                 glBufferData(GL_ARRAY_BUFFER, sizeof(float) * data->sizeX * data->sizeY * data->sizeZ * 32 / 1.5, colorBuffer, GL_STATIC_DRAW);
+                 glBufferData(GL_ARRAY_BUFFER, sizeof(float) * data->sizeX * data->sizeY * data->sizeZ * 32, colorBuffer, GL_STATIC_DRAW);
 
                  delete colorBuffer;
              }
@@ -1046,9 +1153,9 @@ private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
                      }
                  }
              }
-    private: System::Void checkBoxTransperancy_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
-                 checkBoxTransperancy->Checked ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
-             }
+private: System::Void checkBoxTransperancy_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
+             checkBoxDepthTest->Enabled = checkBoxTransperancy->Checked;
+         }
 };
 }
 
