@@ -442,7 +442,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  this->trackBarLayerDistance->Name = L"trackBarLayerDistance";
                  this->trackBarLayerDistance->Size = System::Drawing::Size(200, 45);
                  this->trackBarLayerDistance->TabIndex = 9;
-                 this->trackBarLayerDistance->Value = 50;
+                 this->trackBarLayerDistance->Value = 35;
                  // 
                  // trackBarLayerEnd
                  // 
@@ -773,7 +773,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
 
                  if (checkBoxTransperancy->Checked) {
                      glEnable(GL_BLEND);
-                     if (checkBoxDepthTest->Checked) {
+                     if (!checkBoxDepthTest->Checked) {
                          glDisable(GL_DEPTH_TEST);
                      }
                  }
@@ -812,6 +812,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                          float width = (float)(data->sizeX / 2) * data->scaleX;
                          float height = (float)(data->sizeY / 2) * data->scaleY;
                          
+                         glColor4f(brightnessMult / 50.0f, brightnessMult / 50.0f, brightnessMult / 50.0f, 1.0f);
                          for (size_t iLayer = trackBarLayerStart->Value; iLayer < trackBarLayerEnd->Value + 1; ++iLayer) {
                              glTranslatef(0.0f, 0.0f, -localDepth * 2 / (trackBarLayerEnd->Value - trackBarLayerStart->Value + 1));
                              glBindTexture(GL_TEXTURE_2D, layerTextures[iLayer]);
@@ -829,7 +830,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
 
                  if (checkBoxTransperancy->Checked) {
                      glDisable(GL_BLEND);
-                     if (checkBoxDepthTest->Checked) {
+                     if (!checkBoxDepthTest->Checked) {
                         glEnable(GL_DEPTH_TEST);
                      }
                  }
@@ -941,14 +942,14 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  float *tmp = new float[data->sizeX * data->sizeY * 2];
                  for (size_t iLayer = 0; iLayer < data->sizeZ; ++iLayer) {
                      for (size_t i = 0; i < data->sizeX * data->sizeY *2; i += 2) {
-                         tmp[i] = data->data[i / 2 + iLayer * data->sizeX * data->sizeY] * brightnessMult / maxVal;
+                         tmp[i] = data->data[i / 2 + iLayer * data->sizeX * data->sizeY] * 40 / maxVal;
                          tmp[i + 1] = tmp[i];
                      }
 
                      glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
                      glBindTexture(GL_TEXTURE_2D, layerTextures[iLayer]);
 
-                     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+                     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
                      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP);
                      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
