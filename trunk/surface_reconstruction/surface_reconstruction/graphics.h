@@ -3,7 +3,7 @@
 #include "stdafx.h"
 
 #include <Windows.h>
-#include <gl/GL.h>
-#include <gl/GLu.h>
+#include "GLee.h"
+#include <GL\GLU.h>
 
 int InitGL();
