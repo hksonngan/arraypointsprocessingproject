@@ -108,6 +108,7 @@ namespace surface_reconstruction {
         float angleXRotation, angleYRotation;
         Point mousePosition;
         float distance;
+        float alphaTestValue;
         float depth;
 
         float maxVal;
@@ -154,6 +155,18 @@ namespace surface_reconstruction {
 private: System::Windows::Forms::CheckBox^  checkBoxTransperancy;
 private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeTexture;
 private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
+private: System::Windows::Forms::TextBox^  textBoxAlphaTest;
+private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeTexture3D;
+
+private: System::Windows::Forms::Label^  labelAlphaValue;
+private: System::Windows::Forms::TrackBar^  trackBarAlphaValue;
+private: System::Windows::Forms::CheckBox^  checkBoxAlphaTest;
+private: System::Windows::Forms::CheckBox^  checkBoxOneLayer;
+private: System::Windows::Forms::TrackBar^  trackBarBrightMult;
+
+
+
+
 
 
 
@@ -193,6 +206,12 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  this->buttonLoadData = (gcnew System::Windows::Forms::Button());
                  this->textBoxInputFile = (gcnew System::Windows::Forms::TextBox());
                  this->groupBoxRenderParams = (gcnew System::Windows::Forms::GroupBox());
+                 this->trackBarBrightMult = (gcnew System::Windows::Forms::TrackBar());
+                 this->checkBoxOneLayer = (gcnew System::Windows::Forms::CheckBox());
+                 this->labelAlphaValue = (gcnew System::Windows::Forms::Label());
+                 this->trackBarAlphaValue = (gcnew System::Windows::Forms::TrackBar());
+                 this->checkBoxAlphaTest = (gcnew System::Windows::Forms::CheckBox());
+                 this->textBoxAlphaTest = (gcnew System::Windows::Forms::TextBox());
                  this->checkBoxDepthTest = (gcnew System::Windows::Forms::CheckBox());
                  this->checkBoxTransperancy = (gcnew System::Windows::Forms::CheckBox());
                  this->labelLayerDistance = (gcnew System::Windows::Forms::Label());
@@ -200,6 +219,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  this->trackBarLayerEnd = (gcnew System::Windows::Forms::TrackBar());
                  this->textBoxLayerEnd = (gcnew System::Windows::Forms::TextBox());
                  this->groupBoxRenderType = (gcnew System::Windows::Forms::GroupBox());
+                 this->radioButtonRenderTypeTexture3D = (gcnew System::Windows::Forms::RadioButton());
                  this->radioButtonRenderTypeTexture = (gcnew System::Windows::Forms::RadioButton());
                  this->radioButtonRenderTypeVBO = (gcnew System::Windows::Forms::RadioButton());
                  this->radioButtonRenderTypeImmediate = (gcnew System::Windows::Forms::RadioButton());
@@ -212,6 +232,8 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  this->groupBoxRender->SuspendLayout();
                  this->groupBoxLoadData->SuspendLayout();
                  this->groupBoxRenderParams->SuspendLayout();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarBrightMult))->BeginInit();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarAlphaValue))->BeginInit();
                  (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerDistance))->BeginInit();
                  (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerEnd))->BeginInit();
                  this->groupBoxRenderType->SuspendLayout();
@@ -232,7 +254,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // 
                  this->labelStatus->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left));
                  this->labelStatus->AutoSize = true;
-                 this->labelStatus->Location = System::Drawing::Point(3, 483);
+                 this->labelStatus->Location = System::Drawing::Point(3, 579);
                  this->labelStatus->Name = L"labelStatus";
                  this->labelStatus->Size = System::Drawing::Size(41, 13);
                  this->labelStatus->TabIndex = 1;
@@ -245,7 +267,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                      | System::Windows::Forms::AnchorStyles::Right));
                  this->GLWindow->Location = System::Drawing::Point(6, 19);
                  this->GLWindow->Name = L"GLWindow";
-                 this->GLWindow->Size = System::Drawing::Size(499, 451);
+                 this->GLWindow->Size = System::Drawing::Size(499, 547);
                  this->GLWindow->TabIndex = 2;
                  this->GLWindow->MouseWheel += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseWheel);
                  this->GLWindow->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseMove);
@@ -260,7 +282,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  this->groupBoxRender->Controls->Add(this->GLWindow);
                  this->groupBoxRender->Location = System::Drawing::Point(6, 4);
                  this->groupBoxRender->Name = L"groupBoxRender";
-                 this->groupBoxRender->Size = System::Drawing::Size(511, 476);
+                 this->groupBoxRender->Size = System::Drawing::Size(511, 572);
                  this->groupBoxRender->TabIndex = 3;
                  this->groupBoxRender->TabStop = false;
                  this->groupBoxRender->Text = L"Окно демонстрации";
@@ -336,7 +358,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // labelLayerHeight
                  // 
                  this->labelLayerHeight->AutoSize = true;
-                 this->labelLayerHeight->Location = System::Drawing::Point(2, 96);
+                 this->labelLayerHeight->Location = System::Drawing::Point(4, 96);
                  this->labelLayerHeight->Name = L"labelLayerHeight";
                  this->labelLayerHeight->Size = System::Drawing::Size(75, 13);
                  this->labelLayerHeight->TabIndex = 5;
@@ -345,7 +367,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // labelLayerWidth
                  // 
                  this->labelLayerWidth->AutoSize = true;
-                 this->labelLayerWidth->Location = System::Drawing::Point(2, 83);
+                 this->labelLayerWidth->Location = System::Drawing::Point(3, 83);
                  this->labelLayerWidth->Name = L"labelLayerWidth";
                  this->labelLayerWidth->Size = System::Drawing::Size(76, 13);
                  this->labelLayerWidth->TabIndex = 4;
@@ -381,6 +403,12 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // 
                  this->groupBoxRenderParams->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
                      | System::Windows::Forms::AnchorStyles::Right));
+                 this->groupBoxRenderParams->Controls->Add(this->trackBarBrightMult);
+                 this->groupBoxRenderParams->Controls->Add(this->checkBoxOneLayer);
+                 this->groupBoxRenderParams->Controls->Add(this->labelAlphaValue);
+                 this->groupBoxRenderParams->Controls->Add(this->trackBarAlphaValue);
+                 this->groupBoxRenderParams->Controls->Add(this->checkBoxAlphaTest);
+                 this->groupBoxRenderParams->Controls->Add(this->textBoxAlphaTest);
                  this->groupBoxRenderParams->Controls->Add(this->checkBoxDepthTest);
                  this->groupBoxRenderParams->Controls->Add(this->checkBoxTransperancy);
                  this->groupBoxRenderParams->Controls->Add(this->labelLayerDistance);
@@ -396,10 +424,74 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  this->groupBoxRenderParams->Controls->Add(this->trackBarLayerStart);
                  this->groupBoxRenderParams->Location = System::Drawing::Point(523, 143);
                  this->groupBoxRenderParams->Name = L"groupBoxRenderParams";
-                 this->groupBoxRenderParams->Size = System::Drawing::Size(216, 337);
+                 this->groupBoxRenderParams->Size = System::Drawing::Size(216, 433);
                  this->groupBoxRenderParams->TabIndex = 6;
                  this->groupBoxRenderParams->TabStop = false;
                  this->groupBoxRenderParams->Text = L"Параметры визуализации";
+                 // 
+                 // trackBarBrightMult
+                 // 
+                 this->trackBarBrightMult->Location = System::Drawing::Point(5, 351);
+                 this->trackBarBrightMult->Maximum = 50;
+                 this->trackBarBrightMult->Minimum = 1;
+                 this->trackBarBrightMult->Name = L"trackBarBrightMult";
+                 this->trackBarBrightMult->Size = System::Drawing::Size(146, 45);
+                 this->trackBarBrightMult->TabIndex = 18;
+                 this->trackBarBrightMult->Value = 1;
+                 this->trackBarBrightMult->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarBrightMult_ValueChanged);
+                 // 
+                 // checkBoxOneLayer
+                 // 
+                 this->checkBoxOneLayer->AutoSize = true;
+                 this->checkBoxOneLayer->Location = System::Drawing::Point(43, 134);
+                 this->checkBoxOneLayer->Name = L"checkBoxOneLayer";
+                 this->checkBoxOneLayer->Size = System::Drawing::Size(90, 17);
+                 this->checkBoxOneLayer->TabIndex = 17;
+                 this->checkBoxOneLayer->Text = L"Только один";
+                 this->checkBoxOneLayer->UseVisualStyleBackColor = true;
+                 this->checkBoxOneLayer->CheckedChanged += gcnew System::EventHandler(this, &MainForm::checkBoxOneLayer_CheckedChanged);
+                 // 
+                 // labelAlphaValue
+                 // 
+                 this->labelAlphaValue->AutoSize = true;
+                 this->labelAlphaValue->Location = System::Drawing::Point(6, 273);
+                 this->labelAlphaValue->Name = L"labelAlphaValue";
+                 this->labelAlphaValue->Size = System::Drawing::Size(94, 13);
+                 this->labelAlphaValue->TabIndex = 16;
+                 this->labelAlphaValue->Text = L"Пороговое знач.:";
+                 // 
+                 // trackBarAlphaValue
+                 // 
+                 this->trackBarAlphaValue->Location = System::Drawing::Point(9, 289);
+                 this->trackBarAlphaValue->Maximum = 1000;
+                 this->trackBarAlphaValue->Name = L"trackBarAlphaValue";
+                 this->trackBarAlphaValue->Size = System::Drawing::Size(142, 45);
+                 this->trackBarAlphaValue->TabIndex = 15;
+                 this->trackBarAlphaValue->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarAlphaValue_ValueChanged);
+                 // 
+                 // checkBoxAlphaTest
+                 // 
+                 this->checkBoxAlphaTest->AutoSize = true;
+                 this->checkBoxAlphaTest->Checked = true;
+                 this->checkBoxAlphaTest->CheckState = System::Windows::Forms::CheckState::Checked;
+                 this->checkBoxAlphaTest->Location = System::Drawing::Point(103, 272);
+                 this->checkBoxAlphaTest->Name = L"checkBoxAlphaTest";
+                 this->checkBoxAlphaTest->Size = System::Drawing::Size(95, 17);
+                 this->checkBoxAlphaTest->TabIndex = 14;
+                 this->checkBoxAlphaTest->Text = L"ALPHA_TEST";
+                 this->checkBoxAlphaTest->UseVisualStyleBackColor = true;
+                 this->checkBoxAlphaTest->CheckedChanged += gcnew System::EventHandler(this, &MainForm::checkBoxAlphaTest_CheckedChanged);
+                 this->checkBoxAlphaTest->EnabledChanged += gcnew System::EventHandler(this, &MainForm::checkBoxAlphaTest_EnabledChanged);
+                 // 
+                 // textBoxAlphaTest
+                 // 
+                 this->textBoxAlphaTest->Location = System::Drawing::Point(157, 289);
+                 this->textBoxAlphaTest->Name = L"textBoxAlphaTest";
+                 this->textBoxAlphaTest->Size = System::Drawing::Size(43, 20);
+                 this->textBoxAlphaTest->TabIndex = 13;
+                 this->textBoxAlphaTest->Text = L"0,0";
+                 this->textBoxAlphaTest->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
+                 this->textBoxAlphaTest->TextChanged += gcnew System::EventHandler(this, &MainForm::textBox1_TextChanged);
                  // 
                  // checkBoxDepthTest
                  // 
@@ -407,7 +499,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  this->checkBoxDepthTest->Checked = true;
                  this->checkBoxDepthTest->CheckState = System::Windows::Forms::CheckState::Checked;
                  this->checkBoxDepthTest->Enabled = false;
-                 this->checkBoxDepthTest->Location = System::Drawing::Point(103, 184);
+                 this->checkBoxDepthTest->Location = System::Drawing::Point(103, 254);
                  this->checkBoxDepthTest->Name = L"checkBoxDepthTest";
                  this->checkBoxDepthTest->Size = System::Drawing::Size(97, 17);
                  this->checkBoxDepthTest->TabIndex = 12;
@@ -417,7 +509,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // checkBoxTransperancy
                  // 
                  this->checkBoxTransperancy->AutoSize = true;
-                 this->checkBoxTransperancy->Location = System::Drawing::Point(13, 184);
+                 this->checkBoxTransperancy->Location = System::Drawing::Point(13, 254);
                  this->checkBoxTransperancy->Name = L"checkBoxTransperancy";
                  this->checkBoxTransperancy->Size = System::Drawing::Size(91, 17);
                  this->checkBoxTransperancy->TabIndex = 11;
@@ -428,7 +520,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // labelLayerDistance
                  // 
                  this->labelLayerDistance->AutoSize = true;
-                 this->labelLayerDistance->Location = System::Drawing::Point(10, 204);
+                 this->labelLayerDistance->Location = System::Drawing::Point(10, 210);
                  this->labelLayerDistance->Name = L"labelLayerDistance";
                  this->labelLayerDistance->Size = System::Drawing::Size(147, 13);
                  this->labelLayerDistance->TabIndex = 10;
@@ -436,7 +528,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // 
                  // trackBarLayerDistance
                  // 
-                 this->trackBarLayerDistance->Location = System::Drawing::Point(9, 220);
+                 this->trackBarLayerDistance->Location = System::Drawing::Point(9, 226);
                  this->trackBarLayerDistance->Maximum = 150;
                  this->trackBarLayerDistance->Minimum = 1;
                  this->trackBarLayerDistance->Name = L"trackBarLayerDistance";
@@ -446,7 +538,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // 
                  // trackBarLayerEnd
                  // 
-                 this->trackBarLayerEnd->Location = System::Drawing::Point(6, 156);
+                 this->trackBarLayerEnd->Location = System::Drawing::Point(6, 178);
                  this->trackBarLayerEnd->Maximum = 0;
                  this->trackBarLayerEnd->Name = L"trackBarLayerEnd";
                  this->trackBarLayerEnd->Size = System::Drawing::Size(204, 45);
@@ -455,9 +547,9 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // 
                  // textBoxLayerEnd
                  // 
-                 this->textBoxLayerEnd->Location = System::Drawing::Point(164, 109);
+                 this->textBoxLayerEnd->Location = System::Drawing::Point(171, 132);
                  this->textBoxLayerEnd->Name = L"textBoxLayerEnd";
-                 this->textBoxLayerEnd->Size = System::Drawing::Size(36, 20);
+                 this->textBoxLayerEnd->Size = System::Drawing::Size(29, 20);
                  this->textBoxLayerEnd->TabIndex = 7;
                  this->textBoxLayerEnd->Text = L"0";
                  this->textBoxLayerEnd->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
@@ -465,15 +557,27 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // 
                  // groupBoxRenderType
                  // 
+                 this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeTexture3D);
                  this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeTexture);
                  this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeVBO);
                  this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeImmediate);
                  this->groupBoxRenderType->Location = System::Drawing::Point(6, 19);
                  this->groupBoxRenderType->Name = L"groupBoxRenderType";
-                 this->groupBoxRenderType->Size = System::Drawing::Size(204, 89);
+                 this->groupBoxRenderType->Size = System::Drawing::Size(204, 111);
                  this->groupBoxRenderType->TabIndex = 6;
                  this->groupBoxRenderType->TabStop = false;
                  this->groupBoxRenderType->Text = L"Метод визуализации";
+                 // 
+                 // radioButtonRenderTypeTexture3D
+                 // 
+                 this->radioButtonRenderTypeTexture3D->AutoSize = true;
+                 this->radioButtonRenderTypeTexture3D->Location = System::Drawing::Point(7, 88);
+                 this->radioButtonRenderTypeTexture3D->Name = L"radioButtonRenderTypeTexture3D";
+                 this->radioButtonRenderTypeTexture3D->Size = System::Drawing::Size(162, 17);
+                 this->radioButtonRenderTypeTexture3D->TabIndex = 3;
+                 this->radioButtonRenderTypeTexture3D->Text = L"Использовать 3D текстуру";
+                 this->radioButtonRenderTypeTexture3D->UseVisualStyleBackColor = true;
+                 this->radioButtonRenderTypeTexture3D->CheckedChanged += gcnew System::EventHandler(this, &MainForm::radioButtonRenderTypeTexture3D_CheckedChanged);
                  // 
                  // radioButtonRenderTypeTexture
                  // 
@@ -481,11 +585,12 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  this->radioButtonRenderTypeTexture->Checked = true;
                  this->radioButtonRenderTypeTexture->Location = System::Drawing::Point(7, 65);
                  this->radioButtonRenderTypeTexture->Name = L"radioButtonRenderTypeTexture";
-                 this->radioButtonRenderTypeTexture->Size = System::Drawing::Size(148, 17);
+                 this->radioButtonRenderTypeTexture->Size = System::Drawing::Size(165, 17);
                  this->radioButtonRenderTypeTexture->TabIndex = 2;
                  this->radioButtonRenderTypeTexture->TabStop = true;
-                 this->radioButtonRenderTypeTexture->Text = L"Использовать текстуры";
+                 this->radioButtonRenderTypeTexture->Text = L"Использовать 2D текстуры";
                  this->radioButtonRenderTypeTexture->UseVisualStyleBackColor = true;
+                 this->radioButtonRenderTypeTexture->CheckedChanged += gcnew System::EventHandler(this, &MainForm::radioButtonRenderTypeTexture_CheckedChanged);
                  // 
                  // radioButtonRenderTypeVBO
                  // 
@@ -511,7 +616,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // Segmentation
                  // 
                  this->Segmentation->Enabled = false;
-                 this->Segmentation->Location = System::Drawing::Point(13, 284);
+                 this->Segmentation->Location = System::Drawing::Point(5, 396);
                  this->Segmentation->Name = L"Segmentation";
                  this->Segmentation->Size = System::Drawing::Size(92, 23);
                  this->Segmentation->TabIndex = 5;
@@ -521,9 +626,9 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // 
                  // textBoxBrightnessMult
                  // 
-                 this->textBoxBrightnessMult->Location = System::Drawing::Point(133, 265);
+                 this->textBoxBrightnessMult->Location = System::Drawing::Point(157, 351);
                  this->textBoxBrightnessMult->Name = L"textBoxBrightnessMult";
-                 this->textBoxBrightnessMult->Size = System::Drawing::Size(67, 20);
+                 this->textBoxBrightnessMult->Size = System::Drawing::Size(41, 20);
                  this->textBoxBrightnessMult->TabIndex = 4;
                  this->textBoxBrightnessMult->Text = L"30,0";
                  this->textBoxBrightnessMult->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
@@ -532,7 +637,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // labelBrightnessMult
                  // 
                  this->labelBrightnessMult->AutoSize = true;
-                 this->labelBrightnessMult->Location = System::Drawing::Point(10, 268);
+                 this->labelBrightnessMult->Location = System::Drawing::Point(6, 333);
                  this->labelBrightnessMult->Name = L"labelBrightnessMult";
                  this->labelBrightnessMult->Size = System::Drawing::Size(112, 13);
                  this->labelBrightnessMult->TabIndex = 3;
@@ -540,9 +645,9 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // 
                  // textBoxLayerStart
                  // 
-                 this->textBoxLayerStart->Location = System::Drawing::Point(121, 109);
+                 this->textBoxLayerStart->Location = System::Drawing::Point(133, 132);
                  this->textBoxLayerStart->Name = L"textBoxLayerStart";
-                 this->textBoxLayerStart->Size = System::Drawing::Size(36, 20);
+                 this->textBoxLayerStart->Size = System::Drawing::Size(32, 20);
                  this->textBoxLayerStart->TabIndex = 2;
                  this->textBoxLayerStart->Text = L"0";
                  this->textBoxLayerStart->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
@@ -551,15 +656,15 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // labelCurrentLayer
                  // 
                  this->labelCurrentLayer->AutoSize = true;
-                 this->labelCurrentLayer->Location = System::Drawing::Point(6, 111);
+                 this->labelCurrentLayer->Location = System::Drawing::Point(6, 135);
                  this->labelCurrentLayer->Name = L"labelCurrentLayer";
-                 this->labelCurrentLayer->Size = System::Drawing::Size(115, 13);
+                 this->labelCurrentLayer->Size = System::Drawing::Size(35, 13);
                  this->labelCurrentLayer->TabIndex = 1;
-                 this->labelCurrentLayer->Text = L"Визуализация слоев:";
+                 this->labelCurrentLayer->Text = L"Слои:";
                  // 
                  // trackBarLayerStart
                  // 
-                 this->trackBarLayerStart->Location = System::Drawing::Point(6, 127);
+                 this->trackBarLayerStart->Location = System::Drawing::Point(6, 149);
                  this->trackBarLayerStart->Maximum = 0;
                  this->trackBarLayerStart->Name = L"trackBarLayerStart";
                  this->trackBarLayerStart->Size = System::Drawing::Size(204, 45);
@@ -570,7 +675,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  // 
                  this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
                  this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-                 this->ClientSize = System::Drawing::Size(744, 498);
+                 this->ClientSize = System::Drawing::Size(744, 594);
                  this->Controls->Add(this->groupBoxRenderParams);
                  this->Controls->Add(this->groupBoxLoadData);
                  this->Controls->Add(this->groupBoxRender);
@@ -587,6 +692,8 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  this->groupBoxLoadData->PerformLayout();
                  this->groupBoxRenderParams->ResumeLayout(false);
                  this->groupBoxRenderParams->PerformLayout();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarBrightMult))->EndInit();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarAlphaValue))->EndInit();
                  (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerDistance))->EndInit();
                  (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerEnd))->EndInit();
                  this->groupBoxRenderType->ResumeLayout(false);
@@ -717,6 +824,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  data = new ScanData();
                  layerTextures = 0;
                  vertexVBOID = indexVBOID = colorVBOID = 0;
+                 alphaTestValue = 0.2f;
              }
 
     private: System::Void MainForm_Resize(System::Object^  sender, System::EventArgs^  e) {
@@ -775,8 +883,13 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                      glEnable(GL_BLEND);
                      if (!checkBoxDepthTest->Checked) {
                          glDisable(GL_DEPTH_TEST);
-                     }
+                     }    
                  }
+                 if (checkBoxAlphaTest->Checked) {
+                     glEnable(GL_ALPHA_TEST);
+                     glAlphaFunc(GL_GREATER, alphaTestValue);
+                 }
+
                  if (data && data->data) {
                      if (radioButtonRenderTypeImmediate->Checked) {
                          for (size_t iLayer = trackBarLayerStart->Value; iLayer < trackBarLayerEnd->Value + 1; ++iLayer) {
@@ -807,24 +920,43 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                          glBindBuffer(GL_ARRAY_BUFFER, 0);
                          glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
                      }
-                     else if (radioButtonRenderTypeTexture->Checked) {
+                     else if (radioButtonRenderTypeTexture->Checked ||
+                              radioButtonRenderTypeTexture3D->Checked) {
+
                          float localDepth = -((float)(trackBarLayerEnd->Value - trackBarLayerStart->Value) * data->scaleZ * trackBarLayerDistance->Value / 2.0f);
                          float width = (float)(data->sizeX / 2) * data->scaleX;
                          float height = (float)(data->sizeY / 2) * data->scaleY;
-                         
-                         glColor4f(brightnessMult / 50.0f, brightnessMult / 50.0f, brightnessMult / 50.0f, 1.0f);
+
+                         GLenum target = radioButtonRenderTypeTexture3D->Checked ? GL_TEXTURE_3D : GL_TEXTURE_2D;
+
+                         glEnable(target);
+                         glBindTexture(target, layerTextures[0]);
+
+                         glColor4f(brightnessMult / (float)(trackBarBrightMult->Maximum), brightnessMult / (float)(trackBarBrightMult->Maximum), brightnessMult / (float)(trackBarBrightMult->Maximum), 1.0f);
                          for (size_t iLayer = trackBarLayerStart->Value; iLayer < trackBarLayerEnd->Value + 1; ++iLayer) {
                              glTranslatef(0.0f, 0.0f, -localDepth * 2 / (trackBarLayerEnd->Value - trackBarLayerStart->Value + 1));
-                             glBindTexture(GL_TEXTURE_2D, layerTextures[iLayer]);
-                             glBegin(GL_QUADS); {
-                                 glTexCoord2f(1.0f, 1.0f); glVertex3f(-width, -height, localDepth);
-                                 glTexCoord2f(1.0f, 0.0f); glVertex3f( width, -height, localDepth);
-                                 glTexCoord2f(0.0f, 0.0f); glVertex3f( width,  height, localDepth);
-                                 glTexCoord2f(0.0f, 1.0f); glVertex3f(-width,  height, localDepth);
-                             } glEnd();
+                             if (target == GL_TEXTURE_2D) {
+                                 glBindTexture(GL_TEXTURE_2D, layerTextures[iLayer]);
+                                 glBegin(GL_QUADS); {
+                                     glTexCoord2f(1.0f, 1.0f); glVertex3f(-width, -height, localDepth);
+                                     glTexCoord2f(1.0f, 0.0f); glVertex3f( width, -height, localDepth);
+                                     glTexCoord2f(0.0f, 0.0f); glVertex3f( width,  height, localDepth);
+                                     glTexCoord2f(0.0f, 1.0f); glVertex3f(-width,  height, localDepth);
+                                 } glEnd();
+                             }
+                             else if (target == GL_TEXTURE_3D) {
+                                 float texZCoord = (iLayer + 1) * 1.0f / (float)data->sizeZ;
+                                 glBegin(GL_QUADS); {
+                                     glTexCoord3f(1.0f, 1.0f, texZCoord); glVertex3f(-width, -height, +localDepth);
+                                     glTexCoord3f(1.0f, 0.0f, texZCoord); glVertex3f(+width, -height, +localDepth);
+                                     glTexCoord3f(0.0f, 0.0f, texZCoord); glVertex3f(+width, +height, +localDepth);
+                                     glTexCoord3f(0.0f, 1.0f, texZCoord); glVertex3f(-width, +height, +localDepth);
+                                 } glEnd();
+                             }
                          }
 
-                         glBindTexture(GL_TEXTURE_2D, 0);
+                         glBindTexture(target, 0);
+                         glDisable(target);
                      }
                  }
 
@@ -833,6 +965,9 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                      if (!checkBoxDepthTest->Checked) {
                         glEnable(GL_DEPTH_TEST);
                      }
+                 }
+                 if (checkBoxAlphaTest->Checked) {
+                     glDisable(GL_ALPHA_TEST);
                  }
              }
 
@@ -869,7 +1004,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  if (System::IO::File::Exists(pathToDataFile)) {
                      pathToDataFile = pathToDataFile->Replace("\\","\\\\");
                      if (data->LoadData((char*)Runtime::InteropServices::Marshal::StringToHGlobalAnsi(pathToDataFile).ToPointer())) {
-                         this->labelStatus->Text = L"Data was loaded.";
+                         this->labelStatus->Text = L"Data was load.";
 
                          float fileSize = (float)(IO::FileInfo(pathToDataFile).Length >> 20);
                          this->labelDataFileName->Text = L"Файл: " + pathToDataFile->Substring(pathToDataFile->LastIndexOf("\\")+1) +
@@ -893,8 +1028,8 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                          angleXRotation = angleYRotation = 0.0f;
                          distance = 600.f;
 
-                         this->textBoxBrightnessMult->Text = L"30,0";
-                         brightnessMult = 30.f;
+                         this->textBoxBrightnessMult->Text = L"40,0";
+                         brightnessMult = 40.f;
 
                          this->trackBarLayerStart->Maximum = data->sizeZ - 1;
                          this->trackBarLayerStart->Value = 0;
@@ -916,7 +1051,11 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  }             
              }
     private: System::Void trackBarLayer_ValueChanged(System::Object^  sender, System::EventArgs^  e) {
-                 if (this->trackBarLayerStart->Value <= this->trackBarLayerEnd->Value) {
+                 if (checkBoxOneLayer->Checked) {
+                     this->trackBarLayerEnd->Value = trackBarLayerStart->Value;
+                     this->textBoxLayerStart->Text = this->trackBarLayerStart->Value.ToString();
+                 }
+                 else if (this->trackBarLayerStart->Value <= this->trackBarLayerEnd->Value) {
                      this->textBoxLayerStart->Text = this->trackBarLayerStart->Value.ToString();
                  }
                  else {
@@ -933,31 +1072,59 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  }
              }
 
+    private: System::Void trackBarBrightMult_ValueChanged(System::Object^  sender, System::EventArgs^  e) {
+             textBoxBrightnessMult->Text = trackBarBrightMult->Value.ToString();
+          }
+
+    private: System::Void trackBarAlphaValue_ValueChanged(System::Object^  sender, System::EventArgs^  e) {
+              Double newAlpha = trackBarAlphaValue->Value / 1000.0f;
+              textBoxAlphaTest->Text = newAlpha.ToString();
+          }
+
     private: System::Void generateTextures() {
                  ReleaseTextures();
 
-                 layerTextures = new GLuint[data->sizeZ];
-                 glGenTextures(data->sizeZ, layerTextures);
+                 bool is3Dtexture = radioButtonRenderTypeTexture3D->Checked;
 
-                 float *tmp = new float[data->sizeX * data->sizeY * 2];
-                 for (size_t iLayer = 0; iLayer < data->sizeZ; ++iLayer) {
-                     for (size_t i = 0; i < data->sizeX * data->sizeY *2; i += 2) {
+                 size_t numTextures = is3Dtexture ? 1 : data->sizeZ;
+                 layerTextures = new GLuint[numTextures];
+                 glGenTextures(numTextures, layerTextures);
+
+                 size_t dataSize = data->sizeX * data->sizeY * 2;
+                 if (is3Dtexture) {
+                     dataSize *= data->sizeZ;
+                 }
+                 float *tmp = new float[dataSize];
+
+                 GLenum target = is3Dtexture ? GL_TEXTURE_3D : GL_TEXTURE_2D;
+                 size_t numLayers = is3Dtexture ? 1 : data->sizeZ;
+                 for (size_t iLayer = 0; iLayer < numLayers; ++iLayer) {
+                     for (size_t i = 0; i < dataSize; i += 2) {
                          tmp[i] = data->data[i / 2 + iLayer * data->sizeX * data->sizeY] * 40 / maxVal;
                          tmp[i + 1] = tmp[i];
                      }
 
                      glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                     glBindTexture(GL_TEXTURE_2D, layerTextures[iLayer]);
+                     glBindTexture(target, layerTextures[iLayer]);
 
                      glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP);
-                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                     glTexParameteri(target, GL_TEXTURE_WRAP_R, GL_CLAMP);
+                     glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP);
+                     if (is3Dtexture) {
+                         glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP);
+                     }
+                     glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                     glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-                     //glTexImage2D(GL_TEXTURE_2D, 0, 1, data->sizeX, data->sizeY, 0, GL_INTENSITY, GL_SHORT, data->data + iLayer * data->sizeX * data->sizeY * sizeof(short)); // не работает, сцуко! :(
-                     glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, data->sizeX, data->sizeY, 0, GL_LUMINANCE_ALPHA, GL_FLOAT, tmp);
+                     if (is3Dtexture) {
+                         glTexImage3D(GL_TEXTURE_3D, 0, GL_LUMINANCE_ALPHA, data->sizeX, data->sizeY, data->sizeZ, 0, GL_LUMINANCE_ALPHA, GL_FLOAT, tmp);
+                     }
+                     else {
+                         //glTexImage2D(GL_TEXTURE_2D, 0, 1, data->sizeX, data->sizeY, 0, GL_INTENSITY, GL_SHORT, data->data + iLayer * data->sizeX * data->sizeY * sizeof(short)); // не работает, сцуко! :(
+                         glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, data->sizeX, data->sizeY, 0, GL_LUMINANCE_ALPHA, GL_FLOAT, tmp);
+                     }
+                     
                  }
 
                  delete tmp;
@@ -1120,6 +1287,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
     private: System::Void textBoxBrightnessMult_TextChanged(System::Object^  sender, System::EventArgs^  e) {
                  try {
                      brightnessMult = (float)Double::Parse(this->textBoxBrightnessMult->Text);
+                     trackBarBrightMult->Value = int(brightnessMult);
                  } catch (...) {
                      this->labelStatus->Text = L"Invalid number format for brightness mult.";
                  }
@@ -1155,7 +1323,51 @@ private: System::Windows::Forms::CheckBox^  checkBoxDepthTest;
                  }
              }
 private: System::Void checkBoxTransperancy_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
-             checkBoxDepthTest->Enabled = checkBoxTransperancy->Checked;
+             bool state = checkBoxTransperancy->Checked;
+             checkBoxDepthTest->Enabled = state;
+         }
+private: System::Void textBox1_TextChanged(System::Object^  sender, System::EventArgs^  e) {
+             Double curValue;
+             try {
+                 curValue = Double::Parse(this->textBoxAlphaTest->Text);
+             } catch (...) {
+                 this->labelStatus->Text = "Error. Aplha test value should be double.";
+                 return;
+             }
+             if (curValue >= 0 && curValue <= 1) {
+                 alphaTestValue = curValue;
+                 trackBarAlphaValue->Value = int(alphaTestValue * trackBarAlphaValue->Maximum);
+             } else {
+                 this->labelStatus->Text = "Error. Aplha test value should be in range [0, 1].";
+             }
+         }
+private: System::Void radioButtonRenderTypeTexture_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
+             if (radioButtonRenderTypeTexture->Checked) {
+                 generateTextures();
+             }
+         }
+private: System::Void radioButtonRenderTypeTexture3D_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
+             if (radioButtonRenderTypeTexture3D->Checked) {
+                 generateTextures();
+             }
+         }
+private: System::Void checkBoxAlphaTest_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
+             bool state = checkBoxAlphaTest->Checked;
+             textBoxAlphaTest->Enabled = state;
+             trackBarAlphaValue->Enabled = state;
+         }
+private: System::Void checkBoxAlphaTest_EnabledChanged(System::Object^  sender, System::EventArgs^  e) {
+             bool state = checkBoxAlphaTest->Enabled && checkBoxAlphaTest->Checked;
+             textBoxAlphaTest->Enabled = state;
+             trackBarAlphaValue->Enabled = state;
+         }
+private: System::Void checkBoxOneLayer_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
+             bool state = checkBoxOneLayer->Checked;
+             textBoxLayerEnd->Enabled = !state;
+             trackBarLayerEnd->Enabled = !state;
+             if (state) {
+                 trackBarLayerEnd->Value = trackBarLayerStart->Value;
+             }
          }
 };
 }

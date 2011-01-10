@@ -11,8 +11,6 @@ int InitGL(GLvoid) {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-
-    glEnable(GL_TEXTURE_2D);
     
 #ifdef __ENABLE_LIGHTING
     GLfloat ambient[] = { 1.0f, 1.0f, 1.0f };
