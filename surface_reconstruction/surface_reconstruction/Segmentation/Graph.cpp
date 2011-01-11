@@ -37,9 +37,8 @@ LayerSegmentsTree::LayerSegmentsTree()
     allVoxel = 0;
 }
 
-ScanData* LayerSegmentsTree::CreateData(size_t* index, size_t count)
+void LayerSegmentsTree::CreateData(size_t* index, size_t count, ScanData* data)
 {
-    ScanData* data = new ScanData();
     data->scaleX = segmentsTree->scanData->scaleX;
     data->scaleY = segmentsTree->scanData->scaleY;
     data->scaleZ = segmentsTree->scanData->scaleZ;
@@ -66,7 +65,6 @@ ScanData* LayerSegmentsTree::CreateData(size_t* index, size_t count)
         }
         currentSegment = currentSegment->next;
     }    
-    return data;
 }
 
 //SegmentsTree

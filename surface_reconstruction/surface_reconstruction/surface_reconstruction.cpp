@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "MainForm.h"
+#include "Main.h"
 
 using namespace surface_reconstruction;
 
@@ -13,6 +14,6 @@ int main(array<System::String ^> ^args)
     Application::SetCompatibleTextRenderingDefault(false); 
 
     // Create the main window and run it
-    Application::Run(gcnew MainForm());
+    Application::Run(gcnew CentralForm(gcnew MainForm()));
     return 0;
 }

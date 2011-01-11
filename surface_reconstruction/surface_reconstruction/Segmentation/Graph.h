@@ -1,5 +1,5 @@
 #pragma once
-#include "ScanData.h"
+#include "..\ScanData.h"
 #include <list>
 #include <iostream>
 
@@ -57,7 +57,7 @@ public:
 
     LayerSegmentsTree();
 
-    ScanData* CreateData(size_t* index, size_t count);
+    void CreateData(size_t* index, size_t count, ScanData* data);
 
 };
 

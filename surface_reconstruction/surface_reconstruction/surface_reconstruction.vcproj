@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=""
+				AdditionalIncludeDirectories="&quot;..\&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="2"
@@ -60,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(NoInherit)"
+				AdditionalDependencies="OpenCL.lib $(NOINHERIT)"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories=""
 				GenerateDebugInformation="true"
@@ -117,7 +117,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories=""
+				AdditionalIncludeDirectories="&quot;OpenCL\&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="2"
@@ -135,7 +135,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(NoInherit)"
+				AdditionalDependencies="OpenCL.lib $(NOINHERIT)"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories=""
 				IgnoreDefaultLibraryNames="libc.lib"
@@ -213,6 +213,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Main.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\ScanData.cpp"
 				>
 			</File>
@@ -244,7 +248,27 @@
 				Name="Segmentation"
 				>
 				<File
-					RelativePath=".\Graph.cpp"
+					RelativePath=".\Segmentation\GPUGraph.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Segmentation\Graph.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Segmentation\SegmentationForm.cpp"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="Clusterization"
+				>
+				<File
+					RelativePath=".\Clusterization\ClusterizationGraphics.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Clusterization\K-means.cpp"
 					>
 				</File>
 			</Filter>
@@ -261,6 +285,16 @@
 			<File
 				RelativePath=".\graphics.h"
 				>
+			</File>
+			<File
+				RelativePath=".\Main.h"
+				FileType="3"
+				>
+				<File
+					RelativePath=".\Main.resx"
+					SubType="Designer"
+					>
+				</File>
 			</File>
 			<File
 				RelativePath=".\MainForm.h"
@@ -288,21 +322,42 @@
 				Name="Segmentation"
 				>
 				<File
-					RelativePath=".\Graph.h"
+					RelativePath=".\Segmentation\GPUGraph.h"
 					>
 				</File>
 				<File
-					RelativePath=".\SegmentationForm.cpp"
+					RelativePath=".\Segmentation\Graph.h"
 					>
 				</File>
 				<File
-					RelativePath=".\SegmentationForm.h"
+					RelativePath=".\Segmentation\SegmentationForm.h"
 					FileType="3"
 					>
 					<File
-						RelativePath=".\SegmentationForm.resx"
+						RelativePath=".\Segmentation\SegmentationForm.resx"
 						>
 					</File>
+				</File>
+			</Filter>
+			<Filter
+				Name="Clusterization"
+				>
+				<File
+					RelativePath=".\Clusterization\ClusterizationForm.h"
+					FileType="3"
+					>
+					<File
+						RelativePath=".\Clusterization\ClusterizationForm.resx"
+						>
+					</File>
+				</File>
+				<File
+					RelativePath=".\Clusterization\ClusterizationGraphics.h"
+					>
+				</File>
+				<File
+					RelativePath=".\Clusterization\K-means.h"
+					>
 				</File>
 			</Filter>
 		</Filter>
