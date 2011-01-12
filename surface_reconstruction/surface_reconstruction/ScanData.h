@@ -21,6 +21,8 @@ class ScanData
 		size_t sizeX, sizeY, sizeZ;
 		float scaleX, scaleY, scaleZ;
 
+		size_t TotalSize;
+
 		ScanData();
 		ScanData(const char *pathToBinFile);
 		ScanData(Layer layer);

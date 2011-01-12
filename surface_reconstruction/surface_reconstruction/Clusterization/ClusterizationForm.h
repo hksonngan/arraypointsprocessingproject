@@ -19,39 +19,33 @@ struct TColor
 {
  float R, G, B, A;						// параметры цвета
  TColor():R(0), G(0), B(0), A(0) {};
- TColor(float value_R, 
-	    float value_G, 
-		float value_B,
-		float value_A): R(value_R), G(value_G), B(value_B), A(value_A) {};
- /* System::Drawing::Color ToSystemColor()
- {
-  System::Drawing::Color result;
-  result.R = (unsigned char)floorf(R*255); 
-  result.G = (unsigned char)floorf(G*255); 
-  result.B = (unsigned char)floorf(B*255); 
-  result.A = (unsigned char)floorf(A*255);
-  return result;
- }; */
+ TColor(float value_R, float value_G, float value_B, float value_A): 
+        R(value_R), G(value_G), B(value_B), A(value_A) {};
+ TColor(float value_R, float value_G, float value_B): R(value_R), G(value_G), B(value_B) {};
 };
 
-struct TVoxel
+struct TVoxel							// трёхмерный воксел
 {
-	TColor Color_2D, Color_3D;			// цвет в 2D- и 3D-режиме соответственно
-	bool IsVisible_2D, IsVisible_3D;	// атрибут видимости воксела на сцене 
+ TColor Color_2D, Color_3D;				// цвет в 2D- и 3D-режиме соответственно
+ bool IsVisible_2D, IsVisible_3D;		// атрибут видимости воксела на сцене 
 
-	// Конструктор по умолчанию
-	TVoxel(): Color_2D(TColor(0.0f, 0.0f, 0.0f, 0.0f)), 
+ // Конструктор по умолчанию
+ TVoxel(): Color_2D(TColor(0.0f, 0.0f, 0.0f, 0.0f)), 
 		      Color_3D(TColor(0.0f, 0.0f, 0.0f, 0.0f)), 
 			  IsVisible_2D(true), IsVisible_3D(true) {};
 };
 
-struct TCluster
+struct TSegment							// сегмент из вокселов
 {
-	vector <size_t> Index;		// вектор индексов вокселов
-	bool IsVisible;				// атрибут видимости вокселов, входящих в кластер
-	TColor Color;				// цвет кластера
+ vector <size_t> Index;			// вектор индексов вокселов
+ unsigned char transparensy;	// уровень прозрачности
+ bool IsVisible;				// атрибут видимости вокселов, входящих в сегмент
+ TColor Color;					// цвет сегмента
+ short MinDensity;				// минимальное значение плотности 
+ short MaxDensity;				// максимальное значение плотности
 
-	TCluster(): IsVisible(false), Color(TColor(0.0f, 0.0f, 0.0f, 0.0f)) {Index.clear();};
+ TSegment(): IsVisible(false), Color(TColor(0.0f, 0.0f, 0.0f, 0.0f)), transparensy(255) {Index.clear();};
+ TSegment(vector <size_t> Value_Index) : Index(Value_Index) {Color = TColor(0.0f, 0.0f, 0.0f, 0.0f);};
 };
 
 namespace surface_reconstruction {
@@ -73,7 +67,7 @@ namespace surface_reconstruction {
 	///          resources associated with this form.
 	/// </summary>
 
-	public delegate void MyVisibleDelegate(bool* IsVisible);
+	public delegate void MyVisibleDelegate(size_t index, bool value);
 	public delegate void MyColorDelegate(size_t index, TColor Value_Color);
 
 	public ref class ClusterizationForm : public System::Windows::Forms::Form
@@ -87,12 +81,13 @@ namespace surface_reconstruction {
 			//
 		}
 
-		void ChangeVisible(bool* IsVisible)	{IsVoxelVisible = IsVisible;}
+		void ChangeVisible_2D(size_t index, bool value)	{VoxelsData[index].IsVisible_2D = value;}
+		void ChangeVisible_3D(size_t index, bool value) {VoxelsData[index].IsVisible_3D = value;}
 
-		void ChangeVoxelColor (size_t index, TColor Value_Color) {VoxelColor[index] = Value_Color;}
+		void ChangeVoxelColor_2D(size_t index, TColor Value_Color) {VoxelsData[index].Color_2D = Value_Color;}
+		void ChangeVoxelColor_3D(size_t index, TColor Value_Color) {VoxelsData[index].Color_3D = Value_Color;}
 
-		void ChangeVoxelVisible(size_t index, bool value) {IsVoxelVisible[index] = value;}
-
+		
 	protected:
 		/// <summary>
 		/// Clean up any resources being used.
@@ -114,7 +109,7 @@ namespace surface_reconstruction {
             }
 		}
 
-	private: void ReleaseTextures() 
+	private: void ReleaseTextures()  // освобождение ресурсов, занятых текстурами 
 			 {
               if (layerTextures) 
 			  { 
@@ -124,8 +119,6 @@ namespace surface_reconstruction {
               }
              }
 
-	private: System::Windows::Forms::CheckBox^  CheckBoxClusters;
-	
 	protected: 
 
 	private: System::Windows::Forms::MenuStrip^  MenuStrip;
@@ -135,45 +128,26 @@ namespace surface_reconstruction {
 
 
 	private: System::Windows::Forms::ToolStripMenuItem^  ToolStripMenuItem_Exit;
-	private: System::Windows::Forms::GroupBox^  GroupBoxVisualization;
+
 
 	private: System::Windows::Forms::Panel^  RenderingPanel;
 	private: System::Windows::Forms::Label^  Label_ClustersCount;
 	private: System::Windows::Forms::TrackBar^  TrackBar_ClustersCount;
-
-	private: System::Windows::Forms::Label^  Label_LayerInfo;
-
-	private: System::Windows::Forms::TrackBar^  TrackBar_Layers;
-
-	private: System::Windows::Forms::GroupBox^  GroupBoxDim;
-
-	private: System::Windows::Forms::RadioButton^  RadioButton_2D;
-	private: System::Windows::Forms::RadioButton^  RadioButton_3D;
-	private: System::Windows::Forms::Label^  Label_BrightnessMult;
-
-	private: System::Windows::Forms::TextBox^  TextBox_BrightnessMult;
-
 	private: System::Windows::Forms::GroupBox^  groupBox1;
+
 	private: System::Windows::Forms::OpenFileDialog^  OpenDataDialog;
 
 	public:
-		MyVisibleDelegate^ StaticDelInst_Visible;
-		MyColorDelegate^ StaticDelInst_Color;
+		MyVisibleDelegate^ StaticDelInst_Visible_2D;
+		MyVisibleDelegate^ StaticDelInst_Visible_3D;
+		MyColorDelegate^ StaticDelInst_Color_2D;
+		MyColorDelegate^ StaticDelInst_Color_3D;
 
 		ScanData* InputData;						// исходные данные
 		KmeansMethod* ClusterizationMethod;			// метод, используемый для кластеризации
-		
-		size_t* Cluster_ID;							// метки вокселов - потом уберём!
-
-		TColor* VoxelColor;							// цвета кластеризованных вокселов
-		size_t* NClusters;							// количество кластеров для каждого слоя
-		bool* IsVoxelVisible;						// признак видимости воксела при визуализации
-		vector<vector <size_t> >* Clusters;			// вектор кластеров для каждого слоя данных
-
-		// Новые поля
-		TVoxel* VoxelsData;							// массив вокселов - пока не используется!
-		vector<vector <size_t> >* Clusters_2D;		// вектор кластеров для каждого слоя данных
-		vector<vector <size_t> >* Clusters_3D;		// вектор кластеров для совокупности слоёв
+		TVoxel* VoxelsData;							// массив трёхмерных вокселов с атрибутами
+		vector <TSegment>* Segments_2D;				// вектор сегментов для каждого слоя данных
+		vector <TSegment>* Segments_3D;				// вектор сегментов для нескольких слоёв как единого целого
 
 	protected: 
 
@@ -213,28 +187,53 @@ private: System::Windows::Forms::Label^  Label_IterationsCount;
 private: System::Windows::Forms::Button^  Button_Clusterization;
 private: System::ComponentModel::BackgroundWorker^  BackgroundWorker;
 private: System::Windows::Forms::Button^  Button_VisualizeSelectedClusters;
-private: System::Windows::Forms::CheckBox^  CheckBox_DepthTest;
-private: System::Windows::Forms::CheckBox^  CheckBox_Transparency;
-private: System::Windows::Forms::NumericUpDown^  NumericUpDown_Finish;
-private: System::Windows::Forms::NumericUpDown^  NumericUpDown_Start;
 
-private: System::Windows::Forms::Label^  Label_FinishLayer;
 
-private: System::Windows::Forms::Label^  Label_StartLayer;
-private: System::Windows::Forms::Label^  Label_LayersDistance;
 
-private: System::Windows::Forms::TrackBar^  TrackBar_LayersDistance;
+
+
+
+
+
+
+
+
 
 private: System::Windows::Forms::ColorDialog^  ColorDialog;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  ClusterNumber;
+
+
+
+
+
+
+
+private: System::Windows::Forms::GroupBox^  groupBox2;
+private: System::Windows::Forms::Label^  Label_LayerInfo;
+private: System::Windows::Forms::CheckBox^  CheckBoxClusters;
+private: System::Windows::Forms::TrackBar^  TrackBar_Layers;
+private: System::Windows::Forms::Label^  Label_BrightnessMult;
+private: System::Windows::Forms::TextBox^  TextBox_BrightnessMult;
+private: System::Windows::Forms::CheckBox^  CheckBox_Transparency;
+private: System::Windows::Forms::CheckBox^  CheckBox_DepthTest;
+private: System::Windows::Forms::Label^  Label_StartLayer;
+private: System::Windows::Forms::Label^  Label_FinishLayer;
+private: System::Windows::Forms::NumericUpDown^  NumericUpDown_Start;
+private: System::Windows::Forms::NumericUpDown^  NumericUpDown_Finish;
+private: System::Windows::Forms::TrackBar^  TrackBar_LayersDistance;
+private: System::Windows::Forms::Label^  Label_LayersDistance;
+private: System::Windows::Forms::GroupBox^  GroupBoxVisualization;
+private: System::Windows::Forms::GroupBox^  GroupBoxDim;
+private: System::Windows::Forms::RadioButton^  RadioButton_2D;
+private: System::Windows::Forms::RadioButton^  RadioButton_3D;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  SegmentNumber;
 private: System::Windows::Forms::DataGridViewTextBoxColumn^  VoxelsCount;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  MeanDensity;
-private: System::Windows::Forms::DataGridViewButtonColumn^  Color;
-private: System::Windows::Forms::DataGridViewCheckBoxColumn^  Visible;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  Density_Minimum;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  Density_Maximum;
+private: System::Windows::Forms::DataGridViewButtonColumn^  SegmentColor;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  SegmentTransparensy;
+private: System::Windows::Forms::DataGridViewCheckBoxColumn^  IsSegmentVisible;
 
 private: System::ComponentModel::IContainer^  components;
-
-
 
 #pragma region Windows Form Designer generated code
 		/// <summary>
@@ -244,27 +243,10 @@ private: System::ComponentModel::IContainer^  components;
 		void InitializeComponent(void)
 		{
 			this->components = (gcnew System::ComponentModel::Container());
-			this->CheckBoxClusters = (gcnew System::Windows::Forms::CheckBox());
 			this->MenuStrip = (gcnew System::Windows::Forms::MenuStrip());
 			this->файлToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->ToolStripMenuItem_Download = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->ToolStripMenuItem_Exit = (gcnew System::Windows::Forms::ToolStripMenuItem());
-			this->GroupBoxVisualization = (gcnew System::Windows::Forms::GroupBox());
-			this->Label_LayersDistance = (gcnew System::Windows::Forms::Label());
-			this->TrackBar_LayersDistance = (gcnew System::Windows::Forms::TrackBar());
-			this->NumericUpDown_Finish = (gcnew System::Windows::Forms::NumericUpDown());
-			this->NumericUpDown_Start = (gcnew System::Windows::Forms::NumericUpDown());
-			this->Label_FinishLayer = (gcnew System::Windows::Forms::Label());
-			this->Label_StartLayer = (gcnew System::Windows::Forms::Label());
-			this->CheckBox_DepthTest = (gcnew System::Windows::Forms::CheckBox());
-			this->CheckBox_Transparency = (gcnew System::Windows::Forms::CheckBox());
-			this->TextBox_BrightnessMult = (gcnew System::Windows::Forms::TextBox());
-			this->Label_BrightnessMult = (gcnew System::Windows::Forms::Label());
-			this->GroupBoxDim = (gcnew System::Windows::Forms::GroupBox());
-			this->RadioButton_2D = (gcnew System::Windows::Forms::RadioButton());
-			this->RadioButton_3D = (gcnew System::Windows::Forms::RadioButton());
-			this->TrackBar_Layers = (gcnew System::Windows::Forms::TrackBar());
-			this->Label_LayerInfo = (gcnew System::Windows::Forms::Label());
 			this->RenderingPanel = (gcnew System::Windows::Forms::Panel());
 			this->Label_ClustersCount = (gcnew System::Windows::Forms::Label());
 			this->TrackBar_ClustersCount = (gcnew System::Windows::Forms::TrackBar());
@@ -277,48 +259,55 @@ private: System::ComponentModel::IContainer^  components;
 			this->ProgressBar_Iterations = (gcnew System::Windows::Forms::ProgressBar());
 			this->ProgressBar_Layers = (gcnew System::Windows::Forms::ProgressBar());
 			this->DataGridView_Clusters = (gcnew System::Windows::Forms::DataGridView());
-			this->ClusterNumber = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->SegmentNumber = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 			this->VoxelsCount = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->MeanDensity = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->Color = (gcnew System::Windows::Forms::DataGridViewButtonColumn());
-			this->Visible = (gcnew System::Windows::Forms::DataGridViewCheckBoxColumn());
+			this->Density_Minimum = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->Density_Maximum = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->SegmentColor = (gcnew System::Windows::Forms::DataGridViewButtonColumn());
+			this->SegmentTransparensy = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->IsSegmentVisible = (gcnew System::Windows::Forms::DataGridViewCheckBoxColumn());
 			this->Button_Clusterization = (gcnew System::Windows::Forms::Button());
 			this->BackgroundWorker = (gcnew System::ComponentModel::BackgroundWorker());
 			this->Button_VisualizeSelectedClusters = (gcnew System::Windows::Forms::Button());
 			this->ColorDialog = (gcnew System::Windows::Forms::ColorDialog());
+			this->groupBox2 = (gcnew System::Windows::Forms::GroupBox());
+			this->Label_LayerInfo = (gcnew System::Windows::Forms::Label());
+			this->CheckBoxClusters = (gcnew System::Windows::Forms::CheckBox());
+			this->TrackBar_Layers = (gcnew System::Windows::Forms::TrackBar());
+			this->Label_BrightnessMult = (gcnew System::Windows::Forms::Label());
+			this->TextBox_BrightnessMult = (gcnew System::Windows::Forms::TextBox());
+			this->CheckBox_Transparency = (gcnew System::Windows::Forms::CheckBox());
+			this->CheckBox_DepthTest = (gcnew System::Windows::Forms::CheckBox());
+			this->Label_StartLayer = (gcnew System::Windows::Forms::Label());
+			this->Label_FinishLayer = (gcnew System::Windows::Forms::Label());
+			this->NumericUpDown_Start = (gcnew System::Windows::Forms::NumericUpDown());
+			this->NumericUpDown_Finish = (gcnew System::Windows::Forms::NumericUpDown());
+			this->TrackBar_LayersDistance = (gcnew System::Windows::Forms::TrackBar());
+			this->Label_LayersDistance = (gcnew System::Windows::Forms::Label());
+			this->GroupBoxVisualization = (gcnew System::Windows::Forms::GroupBox());
+			this->GroupBoxDim = (gcnew System::Windows::Forms::GroupBox());
+			this->RadioButton_2D = (gcnew System::Windows::Forms::RadioButton());
+			this->RadioButton_3D = (gcnew System::Windows::Forms::RadioButton());
 			this->MenuStrip->SuspendLayout();
-			this->GroupBoxVisualization->SuspendLayout();
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->TrackBar_LayersDistance))->BeginInit();
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->NumericUpDown_Finish))->BeginInit();
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->NumericUpDown_Start))->BeginInit();
-			this->GroupBoxDim->SuspendLayout();
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->TrackBar_Layers))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->TrackBar_ClustersCount))->BeginInit();
 			this->groupBox1->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->TrackBar_IterationsCount))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->DataGridView_Clusters))->BeginInit();
+			this->groupBox2->SuspendLayout();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->TrackBar_Layers))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->NumericUpDown_Start))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->NumericUpDown_Finish))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->TrackBar_LayersDistance))->BeginInit();
+			this->GroupBoxVisualization->SuspendLayout();
+			this->GroupBoxDim->SuspendLayout();
 			this->SuspendLayout();
-			// 
-			// CheckBoxClusters
-			// 
-			this->CheckBoxClusters->AutoSize = true;
-			this->CheckBoxClusters->Location = System::Drawing::Point(139, 282);
-			this->CheckBoxClusters->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
-			this->CheckBoxClusters->Name = L"CheckBoxClusters";
-			this->CheckBoxClusters->Size = System::Drawing::Size(159, 17);
-			this->CheckBoxClusters->TabIndex = 0;
-			this->CheckBoxClusters->Text = L"Отображать кластеры";
-			this->CheckBoxClusters->UseVisualStyleBackColor = true;
-			this->CheckBoxClusters->Click += gcnew System::EventHandler(this, &ClusterizationForm::CheckBoxClusters_Click);
-			this->CheckBoxClusters->CheckedChanged += gcnew System::EventHandler(this, &ClusterizationForm::CheckBoxClusters_CheckedChanged);
 			// 
 			// MenuStrip
 			// 
 			this->MenuStrip->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(1) {this->файлToolStripMenuItem});
 			this->MenuStrip->Location = System::Drawing::Point(0, 0);
 			this->MenuStrip->Name = L"MenuStrip";
-			this->MenuStrip->Padding = System::Windows::Forms::Padding(4, 2, 0, 2);
-			this->MenuStrip->Size = System::Drawing::Size(840, 24);
+			this->MenuStrip->Size = System::Drawing::Size(1128, 26);
 			this->MenuStrip->TabIndex = 1;
 			this->MenuStrip->Text = L"menuStrip1";
 			// 
@@ -327,14 +316,14 @@ private: System::ComponentModel::IContainer^  components;
 			this->файлToolStripMenuItem->DropDownItems->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(2) {this->ToolStripMenuItem_Download, 
 				this->ToolStripMenuItem_Exit});
 			this->файлToolStripMenuItem->Name = L"файлToolStripMenuItem";
-			this->файлToolStripMenuItem->Size = System::Drawing::Size(45, 20);
+			this->файлToolStripMenuItem->Size = System::Drawing::Size(54, 22);
 			this->файлToolStripMenuItem->Text = L"Файл";
 			// 
 			// ToolStripMenuItem_Download
 			// 
 			this->ToolStripMenuItem_Download->Name = L"ToolStripMenuItem_Download";
 			this->ToolStripMenuItem_Download->ShortcutKeys = static_cast<System::Windows::Forms::Keys>((System::Windows::Forms::Keys::Control | System::Windows::Forms::Keys::O));
-			this->ToolStripMenuItem_Download->Size = System::Drawing::Size(189, 22);
+			this->ToolStripMenuItem_Download->Size = System::Drawing::Size(226, 22);
 			this->ToolStripMenuItem_Download->Text = L"Загрузить...";
 			this->ToolStripMenuItem_Download->Click += gcnew System::EventHandler(this, &ClusterizationForm::ToolStripMenuItem_Download_Click);
 			// 
@@ -342,205 +331,17 @@ private: System::ComponentModel::IContainer^  components;
 			// 
 			this->ToolStripMenuItem_Exit->Name = L"ToolStripMenuItem_Exit";
 			this->ToolStripMenuItem_Exit->ShortcutKeys = static_cast<System::Windows::Forms::Keys>((System::Windows::Forms::Keys::Alt | System::Windows::Forms::Keys::F4));
-			this->ToolStripMenuItem_Exit->Size = System::Drawing::Size(189, 22);
+			this->ToolStripMenuItem_Exit->Size = System::Drawing::Size(226, 22);
 			this->ToolStripMenuItem_Exit->Text = L"Выход";
 			this->ToolStripMenuItem_Exit->Click += gcnew System::EventHandler(this, &ClusterizationForm::ToolStripMenuItem_Exit_Click);
 			// 
-			// GroupBoxVisualization
-			// 
-			this->GroupBoxVisualization->BackColor = System::Drawing::Color::Snow;
-			this->GroupBoxVisualization->Controls->Add(this->Label_LayersDistance);
-			this->GroupBoxVisualization->Controls->Add(this->TrackBar_LayersDistance);
-			this->GroupBoxVisualization->Controls->Add(this->NumericUpDown_Finish);
-			this->GroupBoxVisualization->Controls->Add(this->NumericUpDown_Start);
-			this->GroupBoxVisualization->Controls->Add(this->Label_FinishLayer);
-			this->GroupBoxVisualization->Controls->Add(this->Label_StartLayer);
-			this->GroupBoxVisualization->Controls->Add(this->CheckBox_DepthTest);
-			this->GroupBoxVisualization->Controls->Add(this->CheckBox_Transparency);
-			this->GroupBoxVisualization->Controls->Add(this->TextBox_BrightnessMult);
-			this->GroupBoxVisualization->Controls->Add(this->Label_BrightnessMult);
-			this->GroupBoxVisualization->Controls->Add(this->GroupBoxDim);
-			this->GroupBoxVisualization->Controls->Add(this->TrackBar_Layers);
-			this->GroupBoxVisualization->Controls->Add(this->CheckBoxClusters);
-			this->GroupBoxVisualization->Controls->Add(this->Label_LayerInfo);
-			this->GroupBoxVisualization->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 7.8F, System::Drawing::FontStyle::Bold, 
-				System::Drawing::GraphicsUnit::Point, static_cast<System::Byte>(204)));
-			this->GroupBoxVisualization->Location = System::Drawing::Point(424, 34);
-			this->GroupBoxVisualization->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
-			this->GroupBoxVisualization->Name = L"GroupBoxVisualization";
-			this->GroupBoxVisualization->Padding = System::Windows::Forms::Padding(2, 2, 2, 2);
-			this->GroupBoxVisualization->Size = System::Drawing::Size(407, 311);
-			this->GroupBoxVisualization->TabIndex = 2;
-			this->GroupBoxVisualization->TabStop = false;
-			this->GroupBoxVisualization->Text = L"Настройки визуализации";
-			// 
-			// Label_LayersDistance
-			// 
-			this->Label_LayersDistance->AutoSize = true;
-			this->Label_LayersDistance->Location = System::Drawing::Point(14, 201);
-			this->Label_LayersDistance->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
-			this->Label_LayersDistance->Name = L"Label_LayersDistance";
-			this->Label_LayersDistance->Size = System::Drawing::Size(171, 13);
-			this->Label_LayersDistance->TabIndex = 18;
-			this->Label_LayersDistance->Text = L"Расстояние между слоями:";
-			// 
-			// TrackBar_LayersDistance
-			// 
-			this->TrackBar_LayersDistance->Location = System::Drawing::Point(189, 193);
-			this->TrackBar_LayersDistance->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
-			this->TrackBar_LayersDistance->Maximum = 100;
-			this->TrackBar_LayersDistance->Minimum = 1;
-			this->TrackBar_LayersDistance->Name = L"TrackBar_LayersDistance";
-			this->TrackBar_LayersDistance->Size = System::Drawing::Size(206, 45);
-			this->TrackBar_LayersDistance->TabIndex = 17;
-			this->TrackBar_LayersDistance->Value = 1;
-			this->TrackBar_LayersDistance->ValueChanged += gcnew System::EventHandler(this, &ClusterizationForm::TrackBar_LayersDistance_ValueChanged);
-			// 
-			// NumericUpDown_Finish
-			// 
-			this->NumericUpDown_Finish->Location = System::Drawing::Point(316, 158);
-			this->NumericUpDown_Finish->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
-			this->NumericUpDown_Finish->Name = L"NumericUpDown_Finish";
-			this->NumericUpDown_Finish->Size = System::Drawing::Size(30, 19);
-			this->NumericUpDown_Finish->TabIndex = 16;
-			this->NumericUpDown_Finish->ValueChanged += gcnew System::EventHandler(this, &ClusterizationForm::NumericUpDown_Finish_ValueChanged);
-			// 
-			// NumericUpDown_Start
-			// 
-			this->NumericUpDown_Start->Location = System::Drawing::Point(164, 158);
-			this->NumericUpDown_Start->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
-			this->NumericUpDown_Start->Name = L"NumericUpDown_Start";
-			this->NumericUpDown_Start->Size = System::Drawing::Size(32, 19);
-			this->NumericUpDown_Start->TabIndex = 15;
-			this->NumericUpDown_Start->ValueChanged += gcnew System::EventHandler(this, &ClusterizationForm::NumericUpDown_Start_ValueChanged);
-			// 
-			// Label_FinishLayer
-			// 
-			this->Label_FinishLayer->AutoSize = true;
-			this->Label_FinishLayer->Location = System::Drawing::Point(218, 160);
-			this->Label_FinishLayer->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
-			this->Label_FinishLayer->Name = L"Label_FinishLayer";
-			this->Label_FinishLayer->Size = System::Drawing::Size(101, 13);
-			this->Label_FinishLayer->TabIndex = 14;
-			this->Label_FinishLayer->Text = L"Конечный слой:";
-			// 
-			// Label_StartLayer
-			// 
-			this->Label_StartLayer->AutoSize = true;
-			this->Label_StartLayer->Location = System::Drawing::Point(59, 160);
-			this->Label_StartLayer->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
-			this->Label_StartLayer->Name = L"Label_StartLayer";
-			this->Label_StartLayer->Size = System::Drawing::Size(109, 13);
-			this->Label_StartLayer->TabIndex = 13;
-			this->Label_StartLayer->Text = L"Начальный слой:";
-			// 
-			// CheckBox_DepthTest
-			// 
-			this->CheckBox_DepthTest->AutoSize = true;
-			this->CheckBox_DepthTest->Location = System::Drawing::Point(297, 248);
-			this->CheckBox_DepthTest->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
-			this->CheckBox_DepthTest->Name = L"CheckBox_DepthTest";
-			this->CheckBox_DepthTest->Size = System::Drawing::Size(107, 17);
-			this->CheckBox_DepthTest->TabIndex = 12;
-			this->CheckBox_DepthTest->Text = L"Тест глубины";
-			this->CheckBox_DepthTest->UseVisualStyleBackColor = true;
-			// 
-			// CheckBox_Transparency
-			// 
-			this->CheckBox_Transparency->AutoSize = true;
-			this->CheckBox_Transparency->Location = System::Drawing::Point(189, 248);
-			this->CheckBox_Transparency->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
-			this->CheckBox_Transparency->Name = L"CheckBox_Transparency";
-			this->CheckBox_Transparency->Size = System::Drawing::Size(110, 17);
-			this->CheckBox_Transparency->TabIndex = 11;
-			this->CheckBox_Transparency->Text = L"Прозрачность";
-			this->CheckBox_Transparency->UseVisualStyleBackColor = true;
-			this->CheckBox_Transparency->CheckedChanged += gcnew System::EventHandler(this, &ClusterizationForm::CheckBox_Transparency_CheckedChanged);
-			// 
-			// TextBox_BrightnessMult
-			// 
-			this->TextBox_BrightnessMult->Location = System::Drawing::Point(132, 246);
-			this->TextBox_BrightnessMult->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
-			this->TextBox_BrightnessMult->Name = L"TextBox_BrightnessMult";
-			this->TextBox_BrightnessMult->Size = System::Drawing::Size(43, 19);
-			this->TextBox_BrightnessMult->TabIndex = 10;
-			this->TextBox_BrightnessMult->TextChanged += gcnew System::EventHandler(this, &ClusterizationForm::TextBox_BrightnessMult_TextChanged);
-			// 
-			// Label_BrightnessMult
-			// 
-			this->Label_BrightnessMult->AutoSize = true;
-			this->Label_BrightnessMult->Location = System::Drawing::Point(10, 248);
-			this->Label_BrightnessMult->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
-			this->Label_BrightnessMult->Name = L"Label_BrightnessMult";
-			this->Label_BrightnessMult->Size = System::Drawing::Size(130, 13);
-			this->Label_BrightnessMult->TabIndex = 9;
-			this->Label_BrightnessMult->Text = L"Множитель яркости:";
-			// 
-			// GroupBoxDim
-			// 
-			this->GroupBoxDim->Controls->Add(this->RadioButton_2D);
-			this->GroupBoxDim->Controls->Add(this->RadioButton_3D);
-			this->GroupBoxDim->Location = System::Drawing::Point(43, 28);
-			this->GroupBoxDim->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
-			this->GroupBoxDim->Name = L"GroupBoxDim";
-			this->GroupBoxDim->Padding = System::Windows::Forms::Padding(2, 2, 2, 2);
-			this->GroupBoxDim->Size = System::Drawing::Size(323, 66);
-			this->GroupBoxDim->TabIndex = 1;
-			this->GroupBoxDim->TabStop = false;
-			this->GroupBoxDim->Text = L"Режим кластеризации и визуализации данных";
-			// 
-			// RadioButton_2D
-			// 
-			this->RadioButton_2D->AutoSize = true;
-			this->RadioButton_2D->Checked = true;
-			this->RadioButton_2D->Location = System::Drawing::Point(193, 32);
-			this->RadioButton_2D->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
-			this->RadioButton_2D->Name = L"RadioButton_2D";
-			this->RadioButton_2D->Size = System::Drawing::Size(122, 17);
-			this->RadioButton_2D->TabIndex = 1;
-			this->RadioButton_2D->TabStop = true;
-			this->RadioButton_2D->Text = L"По одному слою";
-			this->RadioButton_2D->UseVisualStyleBackColor = true;
-			this->RadioButton_2D->Click += gcnew System::EventHandler(this, &ClusterizationForm::RadioButton_2D_Click);
-			// 
-			// RadioButton_3D
-			// 
-			this->RadioButton_3D->AutoSize = true;
-			this->RadioButton_3D->Location = System::Drawing::Point(40, 32);
-			this->RadioButton_3D->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
-			this->RadioButton_3D->Name = L"RadioButton_3D";
-			this->RadioButton_3D->Size = System::Drawing::Size(129, 17);
-			this->RadioButton_3D->TabIndex = 0;
-			this->RadioButton_3D->Text = L"Несколько слоёв";
-			this->RadioButton_3D->UseVisualStyleBackColor = true;
-			this->RadioButton_3D->Click += gcnew System::EventHandler(this, &ClusterizationForm::RadioButton_3D_Click);
-			// 
-			// TrackBar_Layers
-			// 
-			this->TrackBar_Layers->Location = System::Drawing::Point(160, 107);
-			this->TrackBar_Layers->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
-			this->TrackBar_Layers->Name = L"TrackBar_Layers";
-			this->TrackBar_Layers->Size = System::Drawing::Size(233, 45);
-			this->TrackBar_Layers->TabIndex = 8;
-			this->TrackBar_Layers->ValueChanged += gcnew System::EventHandler(this, &ClusterizationForm::TrackBar_Layers_ValueChanged);
-			// 
-			// Label_LayerInfo
-			// 
-			this->Label_LayerInfo->AutoSize = true;
-			this->Label_LayerInfo->Location = System::Drawing::Point(14, 111);
-			this->Label_LayerInfo->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
-			this->Label_LayerInfo->Name = L"Label_LayerInfo";
-			this->Label_LayerInfo->Size = System::Drawing::Size(142, 13);
-			this->Label_LayerInfo->TabIndex = 7;
-			this->Label_LayerInfo->Text = L"Номер текущего слоя:";
-			// 
 			// RenderingPanel
 			// 
+			this->RenderingPanel->Anchor = System::Windows::Forms::AnchorStyles::Left;
 			this->RenderingPanel->BackColor = System::Drawing::SystemColors::ControlText;
-			this->RenderingPanel->Location = System::Drawing::Point(2, 24);
-			this->RenderingPanel->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
+			this->RenderingPanel->Location = System::Drawing::Point(3, 29);
 			this->RenderingPanel->Name = L"RenderingPanel";
-			this->RenderingPanel->Size = System::Drawing::Size(410, 603);
+			this->RenderingPanel->Size = System::Drawing::Size(569, 742);
 			this->RenderingPanel->TabIndex = 3;
 			this->RenderingPanel->MouseWheel += gcnew System::Windows::Forms::MouseEventHandler(this, &ClusterizationForm::RenderingPanel_MouseWheel);
 			this->RenderingPanel->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &ClusterizationForm::RenderingPanel_MouseMove);
@@ -552,27 +353,26 @@ private: System::ComponentModel::IContainer^  components;
 			this->Label_ClustersCount->AutoSize = true;
 			this->Label_ClustersCount->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 7.8F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point, 
 				static_cast<System::Byte>(204)));
-			this->Label_ClustersCount->Location = System::Drawing::Point(8, 25);
-			this->Label_ClustersCount->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
+			this->Label_ClustersCount->Location = System::Drawing::Point(12, 28);
 			this->Label_ClustersCount->Name = L"Label_ClustersCount";
-			this->Label_ClustersCount->Size = System::Drawing::Size(204, 13);
+			this->Label_ClustersCount->Size = System::Drawing::Size(252, 17);
 			this->Label_ClustersCount->TabIndex = 4;
-			this->Label_ClustersCount->Text = L"Максимальное число кластеров:";
+			this->Label_ClustersCount->Text = L"Максимальное число сегментов:";
 			// 
 			// TrackBar_ClustersCount
 			// 
-			this->TrackBar_ClustersCount->Location = System::Drawing::Point(224, 23);
-			this->TrackBar_ClustersCount->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
+			this->TrackBar_ClustersCount->Location = System::Drawing::Point(297, 24);
 			this->TrackBar_ClustersCount->Maximum = 100;
 			this->TrackBar_ClustersCount->Minimum = 2;
 			this->TrackBar_ClustersCount->Name = L"TrackBar_ClustersCount";
-			this->TrackBar_ClustersCount->Size = System::Drawing::Size(176, 45);
+			this->TrackBar_ClustersCount->Size = System::Drawing::Size(234, 56);
 			this->TrackBar_ClustersCount->TabIndex = 5;
 			this->TrackBar_ClustersCount->Value = 10;
 			this->TrackBar_ClustersCount->ValueChanged += gcnew System::EventHandler(this, &ClusterizationForm::TrackBar_ClustersCount_ValueChanged);
 			// 
 			// groupBox1
 			// 
+			this->groupBox1->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
 			this->groupBox1->BackColor = System::Drawing::Color::Snow;
 			this->groupBox1->Controls->Add(this->TrackBar_IterationsCount);
 			this->groupBox1->Controls->Add(this->Label_IterationsCount);
@@ -580,23 +380,20 @@ private: System::ComponentModel::IContainer^  components;
 			this->groupBox1->Controls->Add(this->TrackBar_ClustersCount);
 			this->groupBox1->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 7.8F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point, 
 				static_cast<System::Byte>(204)));
-			this->groupBox1->Location = System::Drawing::Point(424, 359);
-			this->groupBox1->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
+			this->groupBox1->Location = System::Drawing::Point(585, 434);
 			this->groupBox1->Name = L"groupBox1";
-			this->groupBox1->Padding = System::Windows::Forms::Padding(2, 2, 2, 2);
-			this->groupBox1->Size = System::Drawing::Size(407, 106);
+			this->groupBox1->Size = System::Drawing::Size(533, 144);
 			this->groupBox1->TabIndex = 11;
 			this->groupBox1->TabStop = false;
-			this->groupBox1->Text = L"Настройки кластеризации";
+			this->groupBox1->Text = L"Настройки сегментации";
 			// 
 			// TrackBar_IterationsCount
 			// 
-			this->TrackBar_IterationsCount->Location = System::Drawing::Point(225, 58);
-			this->TrackBar_IterationsCount->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
+			this->TrackBar_IterationsCount->Location = System::Drawing::Point(298, 84);
 			this->TrackBar_IterationsCount->Maximum = 500;
 			this->TrackBar_IterationsCount->Minimum = 1;
 			this->TrackBar_IterationsCount->Name = L"TrackBar_IterationsCount";
-			this->TrackBar_IterationsCount->Size = System::Drawing::Size(175, 45);
+			this->TrackBar_IterationsCount->Size = System::Drawing::Size(233, 56);
 			this->TrackBar_IterationsCount->TabIndex = 7;
 			this->TrackBar_IterationsCount->Value = 50;
 			this->TrackBar_IterationsCount->ValueChanged += gcnew System::EventHandler(this, &ClusterizationForm::TrackBar_IterationsCount_ValueChanged);
@@ -604,10 +401,9 @@ private: System::ComponentModel::IContainer^  components;
 			// Label_IterationsCount
 			// 
 			this->Label_IterationsCount->AutoSize = true;
-			this->Label_IterationsCount->Location = System::Drawing::Point(3, 62);
-			this->Label_IterationsCount->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
+			this->Label_IterationsCount->Location = System::Drawing::Point(4, 89);
 			this->Label_IterationsCount->Name = L"Label_IterationsCount";
-			this->Label_IterationsCount->Size = System::Drawing::Size(206, 13);
+			this->Label_IterationsCount->Size = System::Drawing::Size(260, 17);
 			this->Label_IterationsCount->TabIndex = 6;
 			this->Label_IterationsCount->Text = L"Количество итераций алгоритма:";
 			// 
@@ -625,80 +421,91 @@ private: System::ComponentModel::IContainer^  components;
 			// 
 			// Label_Status
 			// 
+			this->Label_Status->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left) 
+				| System::Windows::Forms::AnchorStyles::Right));
 			this->Label_Status->AutoSize = true;
-			this->Label_Status->Location = System::Drawing::Point(5, 630);
-			this->Label_Status->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
+			this->Label_Status->Location = System::Drawing::Point(7, 775);
 			this->Label_Status->Name = L"Label_Status";
-			this->Label_Status->Size = System::Drawing::Size(69, 13);
+			this->Label_Status->Size = System::Drawing::Size(91, 17);
 			this->Label_Status->TabIndex = 12;
 			this->Label_Status->Text = L"Label_Status";
 			// 
 			// ProgressBar_Iterations
 			// 
-			this->ProgressBar_Iterations->Location = System::Drawing::Point(2, 647);
-			this->ProgressBar_Iterations->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
+			this->ProgressBar_Iterations->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left));
+			this->ProgressBar_Iterations->Location = System::Drawing::Point(3, 796);
 			this->ProgressBar_Iterations->Name = L"ProgressBar_Iterations";
-			this->ProgressBar_Iterations->Size = System::Drawing::Size(410, 19);
+			this->ProgressBar_Iterations->Size = System::Drawing::Size(569, 23);
 			this->ProgressBar_Iterations->Step = 1;
 			this->ProgressBar_Iterations->TabIndex = 13;
 			// 
 			// ProgressBar_Layers
 			// 
-			this->ProgressBar_Layers->Location = System::Drawing::Point(2, 670);
-			this->ProgressBar_Layers->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
+			this->ProgressBar_Layers->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left));
+			this->ProgressBar_Layers->Location = System::Drawing::Point(3, 825);
 			this->ProgressBar_Layers->Name = L"ProgressBar_Layers";
-			this->ProgressBar_Layers->Size = System::Drawing::Size(410, 19);
+			this->ProgressBar_Layers->Size = System::Drawing::Size(569, 23);
 			this->ProgressBar_Layers->Step = 1;
 			this->ProgressBar_Layers->TabIndex = 14;
 			// 
 			// DataGridView_Clusters
 			// 
+			this->DataGridView_Clusters->Anchor = System::Windows::Forms::AnchorStyles::None;
 			this->DataGridView_Clusters->ColumnHeadersHeightSizeMode = System::Windows::Forms::DataGridViewColumnHeadersHeightSizeMode::AutoSize;
-			this->DataGridView_Clusters->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(5) {this->ClusterNumber, 
-				this->VoxelsCount, this->MeanDensity, this->Color, this->Visible});
-			this->DataGridView_Clusters->Location = System::Drawing::Point(424, 505);
-			this->DataGridView_Clusters->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
+			this->DataGridView_Clusters->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(7) {this->SegmentNumber, 
+				this->VoxelsCount, this->Density_Minimum, this->Density_Maximum, this->SegmentColor, this->SegmentTransparensy, this->IsSegmentVisible});
+			this->DataGridView_Clusters->Location = System::Drawing::Point(7, 25);
 			this->DataGridView_Clusters->Name = L"DataGridView_Clusters";
 			this->DataGridView_Clusters->RowTemplate->Height = 24;
-			this->DataGridView_Clusters->Size = System::Drawing::Size(407, 145);
+			this->DataGridView_Clusters->Size = System::Drawing::Size(517, 179);
 			this->DataGridView_Clusters->TabIndex = 15;
 			this->DataGridView_Clusters->CellValueChanged += gcnew System::Windows::Forms::DataGridViewCellEventHandler(this, &ClusterizationForm::DataGridView_Clusters_CellValueChanged);
 			this->DataGridView_Clusters->CellClick += gcnew System::Windows::Forms::DataGridViewCellEventHandler(this, &ClusterizationForm::DataGridView_Clusters_CellClick);
 			// 
-			// ClusterNumber
+			// SegmentNumber
 			// 
-			this->ClusterNumber->HeaderText = L"Номер кластера";
-			this->ClusterNumber->Name = L"ClusterNumber";
+			this->SegmentNumber->HeaderText = L"Индекс сегмента";
+			this->SegmentNumber->Name = L"SegmentNumber";
 			// 
 			// VoxelsCount
 			// 
 			this->VoxelsCount->HeaderText = L"Число вокселов";
 			this->VoxelsCount->Name = L"VoxelsCount";
 			// 
-			// MeanDensity
+			// Density_Minimum
 			// 
-			this->MeanDensity->HeaderText = L"Средняя плотность";
-			this->MeanDensity->Name = L"MeanDensity";
+			this->Density_Minimum->HeaderText = L"Минимальная плотность";
+			this->Density_Minimum->Name = L"Density_Minimum";
 			// 
-			// Color
+			// Density_Maximum
 			// 
-			this->Color->HeaderText = L"Цвет";
-			this->Color->Name = L"Color";
-			this->Color->Resizable = System::Windows::Forms::DataGridViewTriState::True;
+			this->Density_Maximum->HeaderText = L"Максимальная плотность";
+			this->Density_Maximum->Name = L"Density_Maximum";
 			// 
-			// Visible
+			// SegmentColor
 			// 
-			this->Visible->HeaderText = L"Отобразить";
-			this->Visible->Name = L"Visible";
+			this->SegmentColor->HeaderText = L"Цвет";
+			this->SegmentColor->Name = L"SegmentColor";
+			this->SegmentColor->Resizable = System::Windows::Forms::DataGridViewTriState::True;
+			// 
+			// SegmentTransparensy
+			// 
+			this->SegmentTransparensy->HeaderText = L"Прозрачность";
+			this->SegmentTransparensy->Name = L"SegmentTransparensy";
+			// 
+			// IsSegmentVisible
+			// 
+			this->IsSegmentVisible->HeaderText = L"Отобразить";
+			this->IsSegmentVisible->Name = L"IsSegmentVisible";
 			// 
 			// Button_Clusterization
 			// 
-			this->Button_Clusterization->Location = System::Drawing::Point(568, 471);
-			this->Button_Clusterization->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
+			this->Button_Clusterization->Anchor = System::Windows::Forms::AnchorStyles::Right;
+			this->Button_Clusterization->Location = System::Drawing::Point(621, 594);
 			this->Button_Clusterization->Name = L"Button_Clusterization";
-			this->Button_Clusterization->Size = System::Drawing::Size(137, 26);
+			this->Button_Clusterization->Size = System::Drawing::Size(183, 32);
 			this->Button_Clusterization->TabIndex = 16;
-			this->Button_Clusterization->Text = L"Кластеризовать данные";
+			this->Button_Clusterization->Text = L"Сегментировать данные";
 			this->Button_Clusterization->UseVisualStyleBackColor = true;
 			this->Button_Clusterization->Click += gcnew System::EventHandler(this, &ClusterizationForm::Button_Clusterization_Click);
 			// 
@@ -712,23 +519,222 @@ private: System::ComponentModel::IContainer^  components;
 			// 
 			// Button_VisualizeSelectedClusters
 			// 
-			this->Button_VisualizeSelectedClusters->Location = System::Drawing::Point(547, 661);
-			this->Button_VisualizeSelectedClusters->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
+			this->Button_VisualizeSelectedClusters->Anchor = System::Windows::Forms::AnchorStyles::Right;
+			this->Button_VisualizeSelectedClusters->Location = System::Drawing::Point(844, 594);
 			this->Button_VisualizeSelectedClusters->Name = L"Button_VisualizeSelectedClusters";
-			this->Button_VisualizeSelectedClusters->Size = System::Drawing::Size(181, 24);
+			this->Button_VisualizeSelectedClusters->Size = System::Drawing::Size(241, 32);
 			this->Button_VisualizeSelectedClusters->TabIndex = 17;
-			this->Button_VisualizeSelectedClusters->Text = L"Отобразить выбранные кластеры";
+			this->Button_VisualizeSelectedClusters->Text = L"Отобразить выбранные сегменты";
 			this->Button_VisualizeSelectedClusters->UseVisualStyleBackColor = true;
 			this->Button_VisualizeSelectedClusters->Click += gcnew System::EventHandler(this, &ClusterizationForm::Button_VisualizeSelectedClusters_Click);
 			// 
+			// groupBox2
+			// 
+			this->groupBox2->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Right));
+			this->groupBox2->Controls->Add(this->DataGridView_Clusters);
+			this->groupBox2->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 7.8F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point, 
+				static_cast<System::Byte>(204)));
+			this->groupBox2->Location = System::Drawing::Point(585, 638);
+			this->groupBox2->Name = L"groupBox2";
+			this->groupBox2->Size = System::Drawing::Size(533, 210);
+			this->groupBox2->TabIndex = 18;
+			this->groupBox2->TabStop = false;
+			this->groupBox2->Text = L"Информация о сегментах";
+			// 
+			// Label_LayerInfo
+			// 
+			this->Label_LayerInfo->AutoSize = true;
+			this->Label_LayerInfo->Location = System::Drawing::Point(14, 125);
+			this->Label_LayerInfo->Name = L"Label_LayerInfo";
+			this->Label_LayerInfo->Size = System::Drawing::Size(175, 17);
+			this->Label_LayerInfo->TabIndex = 7;
+			this->Label_LayerInfo->Text = L"Номер текущего слоя:";
+			// 
+			// CheckBoxClusters
+			// 
+			this->CheckBoxClusters->AutoSize = true;
+			this->CheckBoxClusters->Location = System::Drawing::Point(181, 352);
+			this->CheckBoxClusters->Name = L"CheckBoxClusters";
+			this->CheckBoxClusters->Size = System::Drawing::Size(196, 21);
+			this->CheckBoxClusters->TabIndex = 0;
+			this->CheckBoxClusters->Text = L"Отображать сегменты";
+			this->CheckBoxClusters->UseVisualStyleBackColor = true;
+			this->CheckBoxClusters->Click += gcnew System::EventHandler(this, &ClusterizationForm::CheckBoxClusters_Click);
+			this->CheckBoxClusters->CheckedChanged += gcnew System::EventHandler(this, &ClusterizationForm::CheckBoxClusters_CheckedChanged);
+			// 
+			// TrackBar_Layers
+			// 
+			this->TrackBar_Layers->Location = System::Drawing::Point(209, 120);
+			this->TrackBar_Layers->Name = L"TrackBar_Layers";
+			this->TrackBar_Layers->Size = System::Drawing::Size(311, 56);
+			this->TrackBar_Layers->TabIndex = 8;
+			this->TrackBar_Layers->ValueChanged += gcnew System::EventHandler(this, &ClusterizationForm::TrackBar_Layers_ValueChanged);
+			// 
+			// Label_BrightnessMult
+			// 
+			this->Label_BrightnessMult->AutoSize = true;
+			this->Label_BrightnessMult->Location = System::Drawing::Point(13, 302);
+			this->Label_BrightnessMult->Name = L"Label_BrightnessMult";
+			this->Label_BrightnessMult->Size = System::Drawing::Size(161, 17);
+			this->Label_BrightnessMult->TabIndex = 9;
+			this->Label_BrightnessMult->Text = L"Множитель яркости:";
+			// 
+			// TextBox_BrightnessMult
+			// 
+			this->TextBox_BrightnessMult->Location = System::Drawing::Point(176, 300);
+			this->TextBox_BrightnessMult->Name = L"TextBox_BrightnessMult";
+			this->TextBox_BrightnessMult->Size = System::Drawing::Size(56, 22);
+			this->TextBox_BrightnessMult->TabIndex = 10;
+			this->TextBox_BrightnessMult->TextChanged += gcnew System::EventHandler(this, &ClusterizationForm::TextBox_BrightnessMult_TextChanged);
+			// 
+			// CheckBox_Transparency
+			// 
+			this->CheckBox_Transparency->AutoSize = true;
+			this->CheckBox_Transparency->Location = System::Drawing::Point(248, 301);
+			this->CheckBox_Transparency->Name = L"CheckBox_Transparency";
+			this->CheckBox_Transparency->Size = System::Drawing::Size(136, 21);
+			this->CheckBox_Transparency->TabIndex = 11;
+			this->CheckBox_Transparency->Text = L"Прозрачность";
+			this->CheckBox_Transparency->UseVisualStyleBackColor = true;
+			this->CheckBox_Transparency->CheckedChanged += gcnew System::EventHandler(this, &ClusterizationForm::CheckBox_Transparency_CheckedChanged);
+			// 
+			// CheckBox_DepthTest
+			// 
+			this->CheckBox_DepthTest->AutoSize = true;
+			this->CheckBox_DepthTest->Location = System::Drawing::Point(390, 301);
+			this->CheckBox_DepthTest->Name = L"CheckBox_DepthTest";
+			this->CheckBox_DepthTest->Size = System::Drawing::Size(131, 21);
+			this->CheckBox_DepthTest->TabIndex = 12;
+			this->CheckBox_DepthTest->Text = L"Тест глубины";
+			this->CheckBox_DepthTest->UseVisualStyleBackColor = true;
+			// 
+			// Label_StartLayer
+			// 
+			this->Label_StartLayer->AutoSize = true;
+			this->Label_StartLayer->Location = System::Drawing::Point(56, 191);
+			this->Label_StartLayer->Name = L"Label_StartLayer";
+			this->Label_StartLayer->Size = System::Drawing::Size(137, 17);
+			this->Label_StartLayer->TabIndex = 13;
+			this->Label_StartLayer->Text = L"Начальный слой:";
+			// 
+			// Label_FinishLayer
+			// 
+			this->Label_FinishLayer->AutoSize = true;
+			this->Label_FinishLayer->Location = System::Drawing::Point(268, 191);
+			this->Label_FinishLayer->Name = L"Label_FinishLayer";
+			this->Label_FinishLayer->Size = System::Drawing::Size(128, 17);
+			this->Label_FinishLayer->TabIndex = 14;
+			this->Label_FinishLayer->Text = L"Конечный слой:";
+			// 
+			// NumericUpDown_Start
+			// 
+			this->NumericUpDown_Start->Location = System::Drawing::Point(196, 189);
+			this->NumericUpDown_Start->Name = L"NumericUpDown_Start";
+			this->NumericUpDown_Start->Size = System::Drawing::Size(42, 22);
+			this->NumericUpDown_Start->TabIndex = 15;
+			this->NumericUpDown_Start->ValueChanged += gcnew System::EventHandler(this, &ClusterizationForm::NumericUpDown_Start_ValueChanged);
+			// 
+			// NumericUpDown_Finish
+			// 
+			this->NumericUpDown_Finish->Location = System::Drawing::Point(398, 189);
+			this->NumericUpDown_Finish->Name = L"NumericUpDown_Finish";
+			this->NumericUpDown_Finish->Size = System::Drawing::Size(40, 22);
+			this->NumericUpDown_Finish->TabIndex = 16;
+			this->NumericUpDown_Finish->ValueChanged += gcnew System::EventHandler(this, &ClusterizationForm::NumericUpDown_Finish_ValueChanged);
+			// 
+			// TrackBar_LayersDistance
+			// 
+			this->TrackBar_LayersDistance->Location = System::Drawing::Point(250, 231);
+			this->TrackBar_LayersDistance->Maximum = 100;
+			this->TrackBar_LayersDistance->Minimum = 1;
+			this->TrackBar_LayersDistance->Name = L"TrackBar_LayersDistance";
+			this->TrackBar_LayersDistance->Size = System::Drawing::Size(274, 56);
+			this->TrackBar_LayersDistance->TabIndex = 17;
+			this->TrackBar_LayersDistance->Value = 1;
+			this->TrackBar_LayersDistance->ValueChanged += gcnew System::EventHandler(this, &ClusterizationForm::TrackBar_LayersDistance_ValueChanged);
+			// 
+			// Label_LayersDistance
+			// 
+			this->Label_LayersDistance->AutoSize = true;
+			this->Label_LayersDistance->Location = System::Drawing::Point(16, 240);
+			this->Label_LayersDistance->Name = L"Label_LayersDistance";
+			this->Label_LayersDistance->Size = System::Drawing::Size(211, 17);
+			this->Label_LayersDistance->TabIndex = 18;
+			this->Label_LayersDistance->Text = L"Расстояние между слоями:";
+			// 
+			// GroupBoxVisualization
+			// 
+			this->GroupBoxVisualization->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
+			this->GroupBoxVisualization->BackColor = System::Drawing::Color::Snow;
+			this->GroupBoxVisualization->Controls->Add(this->Label_LayersDistance);
+			this->GroupBoxVisualization->Controls->Add(this->TrackBar_LayersDistance);
+			this->GroupBoxVisualization->Controls->Add(this->NumericUpDown_Finish);
+			this->GroupBoxVisualization->Controls->Add(this->NumericUpDown_Start);
+			this->GroupBoxVisualization->Controls->Add(this->Label_FinishLayer);
+			this->GroupBoxVisualization->Controls->Add(this->Label_StartLayer);
+			this->GroupBoxVisualization->Controls->Add(this->CheckBox_DepthTest);
+			this->GroupBoxVisualization->Controls->Add(this->CheckBox_Transparency);
+			this->GroupBoxVisualization->Controls->Add(this->TextBox_BrightnessMult);
+			this->GroupBoxVisualization->Controls->Add(this->Label_BrightnessMult);
+			this->GroupBoxVisualization->Controls->Add(this->GroupBoxDim);
+			this->GroupBoxVisualization->Controls->Add(this->TrackBar_Layers);
+			this->GroupBoxVisualization->Controls->Add(this->CheckBoxClusters);
+			this->GroupBoxVisualization->Controls->Add(this->Label_LayerInfo);
+			this->GroupBoxVisualization->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 7.8F, System::Drawing::FontStyle::Bold, 
+				System::Drawing::GraphicsUnit::Point, static_cast<System::Byte>(204)));
+			this->GroupBoxVisualization->Location = System::Drawing::Point(585, 38);
+			this->GroupBoxVisualization->Name = L"GroupBoxVisualization";
+			this->GroupBoxVisualization->Size = System::Drawing::Size(533, 382);
+			this->GroupBoxVisualization->TabIndex = 2;
+			this->GroupBoxVisualization->TabStop = false;
+			this->GroupBoxVisualization->Text = L"Настройки визуализации";
+			// 
+			// GroupBoxDim
+			// 
+			this->GroupBoxDim->BackColor = System::Drawing::Color::Snow;
+			this->GroupBoxDim->Controls->Add(this->RadioButton_2D);
+			this->GroupBoxDim->Controls->Add(this->RadioButton_3D);
+			this->GroupBoxDim->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 7.8F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point, 
+				static_cast<System::Byte>(204)));
+			this->GroupBoxDim->Location = System::Drawing::Point(65, 33);
+			this->GroupBoxDim->Name = L"GroupBoxDim";
+			this->GroupBoxDim->Size = System::Drawing::Size(411, 74);
+			this->GroupBoxDim->TabIndex = 1;
+			this->GroupBoxDim->TabStop = false;
+			this->GroupBoxDim->Text = L"Режим сегментации и визуализации данных";
+			// 
+			// RadioButton_2D
+			// 
+			this->RadioButton_2D->AutoSize = true;
+			this->RadioButton_2D->Checked = true;
+			this->RadioButton_2D->Location = System::Drawing::Point(3, 34);
+			this->RadioButton_2D->Name = L"RadioButton_2D";
+			this->RadioButton_2D->Size = System::Drawing::Size(187, 21);
+			this->RadioButton_2D->TabIndex = 1;
+			this->RadioButton_2D->TabStop = true;
+			this->RadioButton_2D->Text = L"По одному слою (2D)";
+			this->RadioButton_2D->UseVisualStyleBackColor = true;
+			this->RadioButton_2D->Click += gcnew System::EventHandler(this, &ClusterizationForm::RadioButton_2D_Click);
+			// 
+			// RadioButton_3D
+			// 
+			this->RadioButton_3D->AutoSize = true;
+			this->RadioButton_3D->Location = System::Drawing::Point(215, 35);
+			this->RadioButton_3D->Name = L"RadioButton_3D";
+			this->RadioButton_3D->Size = System::Drawing::Size(193, 21);
+			this->RadioButton_3D->TabIndex = 0;
+			this->RadioButton_3D->Text = L"Несколько слоёв (3D)";
+			this->RadioButton_3D->UseVisualStyleBackColor = true;
+			this->RadioButton_3D->Click += gcnew System::EventHandler(this, &ClusterizationForm::RadioButton_3D_Click);
+			// 
 			// ClusterizationForm
 			// 
-			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
-			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-			this->ClientSize = System::Drawing::Size(840, 693);
+			this->AutoScaleDimensions = System::Drawing::SizeF(120, 120);
+			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Dpi;
+			this->ClientSize = System::Drawing::Size(1128, 853);
+			this->Controls->Add(this->groupBox2);
 			this->Controls->Add(this->Button_VisualizeSelectedClusters);
 			this->Controls->Add(this->Button_Clusterization);
-			this->Controls->Add(this->DataGridView_Clusters);
 			this->Controls->Add(this->ProgressBar_Layers);
 			this->Controls->Add(this->ProgressBar_Iterations);
 			this->Controls->Add(this->Label_Status);
@@ -737,53 +743,87 @@ private: System::ComponentModel::IContainer^  components;
 			this->Controls->Add(this->GroupBoxVisualization);
 			this->Controls->Add(this->MenuStrip);
 			this->MainMenuStrip = this->MenuStrip;
-			this->Margin = System::Windows::Forms::Padding(2, 2, 2, 2);
 			this->Name = L"ClusterizationForm";
 			this->StartPosition = System::Windows::Forms::FormStartPosition::CenterScreen;
-			this->Text = L"Проект по СКГ: кластеризация";
-			this->Load += gcnew System::EventHandler(this, &ClusterizationForm::MainForm_Load);
-			this->Resize += gcnew System::EventHandler(this, &ClusterizationForm::MainForm_Resize);
+			this->Text = L"Сегментация методом k-средних";
+			this->Load += gcnew System::EventHandler(this, &ClusterizationForm::ClusterizationForm_Load);
+			this->FormClosing += gcnew System::Windows::Forms::FormClosingEventHandler(this, &ClusterizationForm::ClusterizationForm_FormClosing);
+			this->Resize += gcnew System::EventHandler(this, &ClusterizationForm::ClusterizationForm_Resize);
 			this->MenuStrip->ResumeLayout(false);
 			this->MenuStrip->PerformLayout();
-			this->GroupBoxVisualization->ResumeLayout(false);
-			this->GroupBoxVisualization->PerformLayout();
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->TrackBar_LayersDistance))->EndInit();
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->NumericUpDown_Finish))->EndInit();
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->NumericUpDown_Start))->EndInit();
-			this->GroupBoxDim->ResumeLayout(false);
-			this->GroupBoxDim->PerformLayout();
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->TrackBar_Layers))->EndInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->TrackBar_ClustersCount))->EndInit();
 			this->groupBox1->ResumeLayout(false);
 			this->groupBox1->PerformLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->TrackBar_IterationsCount))->EndInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->DataGridView_Clusters))->EndInit();
+			this->groupBox2->ResumeLayout(false);
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->TrackBar_Layers))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->NumericUpDown_Start))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->NumericUpDown_Finish))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->TrackBar_LayersDistance))->EndInit();
+			this->GroupBoxVisualization->ResumeLayout(false);
+			this->GroupBoxVisualization->PerformLayout();
+			this->GroupBoxDim->ResumeLayout(false);
+			this->GroupBoxDim->PerformLayout();
 			this->ResumeLayout(false);
 			this->PerformLayout();
 
 		}
 #pragma endregion
 
-	private: System::Double CalcMeanDensity(vector <size_t> cluster)
+		private: System::String^ GetStringOfColor(TColor Color)
+				 {
+					 return L"Color[R = "+((unsigned char)(Color.R*255)).ToString()+L", "+
+						          L"G = "+((unsigned char)(Color.G*255)).ToString()+L", "+
+								  L"B = "+((unsigned char)(Color.B*255)).ToString()+L"]";
+				 }
+
+		private: System::UInt32 MinDensityOfSegment_2D(size_t LayerIndex, size_t SegmentIndex)
 			 {
-          
-        
-			  double Sum = 0;
-			  vector <size_t>::iterator iter = cluster.begin();
-			  vector <size_t>::iterator _end = cluster.end();
+			  UInt32 result = UInt32::MaxValue;
+			  vector <size_t>::iterator iter = Segments_2D[LayerIndex].at(SegmentIndex).Index.begin();
+			  vector <size_t>::iterator _end = Segments_2D[LayerIndex].at(SegmentIndex).Index.end();
 			  for (; iter!=_end; ++iter)
-        {
-          if (this->RadioButton_2D->Checked)
-          {
-           size_t z = TrackBar_Layers->Value;
-			     Sum+=(double)InputData->data[*iter+z*InputData->sizeX*InputData->sizeY];
-          }
-          if (this->RadioButton_3D->Checked)
-          {
-            Sum+=(double)InputData->data[*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY];
-          }
-        }
-			  return Sum/cluster.size();
+			  if ((UInt32)InputData->data[*iter+LayerIndex*InputData->sizeX*InputData->sizeY]<result)
+			  result = InputData->data[*iter+LayerIndex*InputData->sizeX*InputData->sizeY];
+			  
+			  return result;
+			 }
+
+	 private: System::UInt32 MaxDensityOfSegment_2D(size_t LayerIndex, size_t SegmentIndex)
+			  {
+			   UInt32 result = 0;
+			   vector <size_t>::iterator iter = Segments_2D[LayerIndex].at(SegmentIndex).Index.begin();
+			   vector <size_t>::iterator _end = Segments_2D[LayerIndex].at(SegmentIndex).Index.end();
+			   for (; iter!=_end; ++iter)
+			   if ((UInt32)InputData->data[*iter+LayerIndex*InputData->sizeX*InputData->sizeY]>result)
+			   result = InputData->data[*iter+LayerIndex*InputData->sizeX*InputData->sizeY];
+			  
+			   return result;
+			  }
+
+   private: System::UInt32 MinDensityOfSegment_3D(size_t StartLayerIndex, size_t SegmentIndex)
+			{
+			  UInt32 result = UInt32::MaxValue;
+			  vector <size_t>::iterator iter = Segments_3D->at(SegmentIndex).Index.begin();
+			  vector <size_t>::iterator _end = Segments_3D->at(SegmentIndex).Index.end();
+			  for (; iter!=_end; ++iter)
+			  if ((UInt32)InputData->data[*iter+StartLayerIndex*InputData->sizeX*InputData->sizeY]<result)
+			  result = InputData->data[*iter+StartLayerIndex*InputData->sizeX*InputData->sizeY];
+			  
+			  return result;
+			}
+
+	private: System::UInt32 MaxDensityOfSegment_3D(size_t StartLayerIndex, size_t SegmentIndex)
+			 {
+			  UInt32 result = 0;
+			  vector <size_t>::iterator iter = Segments_3D->at(SegmentIndex).Index.begin();
+			  vector <size_t>::iterator _end = Segments_3D->at(SegmentIndex).Index.end();
+			  for (; iter!=_end; ++iter)
+			  if ((UInt32)InputData->data[*iter+StartLayerIndex*InputData->sizeX*InputData->sizeY]>result)
+			  result = InputData->data[*iter+StartLayerIndex*InputData->sizeX*InputData->sizeY];
+			  
+			  return result;
 			 }
 
 	private: System::Void DrawGLScene() 
@@ -796,35 +836,15 @@ private: System::ComponentModel::IContainer^  components;
               glRotatef(90.0f, 0.0f, 0.0, 1.0f);
               glRotatef(angleXRotation, 1.0f, 0.0f, 0.0f);
               glRotatef(angleYRotation, 0.0f, 1.0f, 0.0f);
-              /*
-              glBegin(GL_TRIANGLES); {
-              glColor3f((GLfloat)(rand() / (rand()+1)),
-                        (GLfloat)(rand() / (rand()+1)),
-                        (GLfloat)(rand() / (rand()+1)));
-              glVertex3f(-1.0f, -0.4f, 0.0f);
-              glColor3f((GLfloat)(rand() / (rand()+1)),
-                        (GLfloat)(rand() / (rand()+1)),
-                        (GLfloat)(rand() / (rand()+1)));
-              glVertex3f( 1.0f, -0.4f, 0.0f);
-
-                      glColor3f((GLfloat)(rand() / (rand()+1)),
-                          (GLfloat)(rand() / (rand()+1)),
-                          (GLfloat)(rand() / (rand()+1)));
-                      glVertex3f( 0.0f,  1.0f, 0.0f);
-                  }
-                  glEnd();
-                  //*/
-                  //glColor3f(1.0f, 1.0f, 1.0f);
-                  //glCallList(theBox);
-
-				  if (this->CheckBox_Transparency->Checked) 
-				  {
-                   glEnable(GL_BLEND);
-                   if (CheckBox_DepthTest->Checked) 
-				   {
-                    glDisable(GL_DEPTH_TEST);
-                   }
-                  }
+              
+			  if (this->CheckBox_Transparency->Checked) 
+			  {
+               glEnable(GL_BLEND);
+               if (CheckBox_DepthTest->Checked) 
+			   {
+                glDisable(GL_DEPTH_TEST);
+               }
+              }
 				  
 				  //RenderLayer(this->TrackBar_Layers->Value);
 				  
@@ -877,11 +897,11 @@ private: System::ComponentModel::IContainer^  components;
 				  
 				  if (CheckBox_Transparency->Checked) 
 				  {
-                     glDisable(GL_BLEND);
-                     if (CheckBox_DepthTest->Checked) 
-					 {
-                        glEnable(GL_DEPTH_TEST);
-                     }
+                   glDisable(GL_BLEND);
+                   if (CheckBox_DepthTest->Checked) 
+				   {
+                    glEnable(GL_DEPTH_TEST);
+                   }
                   }
 				  
 					
@@ -892,7 +912,7 @@ private: System::ComponentModel::IContainer^  components;
 
 	private: System::Void RenderLayer(size_t z) 
 			 {
-			  glScalef(InputData->scaleX, InputData->scaleY, InputData->scaleZ);
+			  /* glScalef(InputData->scaleX, InputData->scaleY, InputData->scaleZ);
               glTranslatef(0.0f, 0.0f, ((float)(InputData->sizeZ / 2) - z) * InputData->scaleZ);
               glPushMatrix();
               for (size_t iColumn = 0; iColumn < InputData->sizeX; ++iColumn) 
@@ -919,10 +939,10 @@ private: System::ComponentModel::IContainer^  components;
 			   
                glPopMatrix();
               }
-              glPopMatrix();
+              glPopMatrix(); */
              }
 
-	private: System::Void MainForm_Load(System::Object^  sender, System::EventArgs^  e) 
+	private: System::Void ClusterizationForm_Load(System::Object^  sender, System::EventArgs^  e) 
 			 {
 			  GLuint PixelFormat;
 
@@ -976,7 +996,7 @@ private: System::ComponentModel::IContainer^  components;
                  }
                  this->Label_Status->Text = L"GL context created!";
 
-                 MainForm_Resize(sender, e);
+                 ClusterizationForm_Resize(sender, e);
 
                  if (!ClusterizationInitGL()) {
                      this->Label_Status->Text = L"Failed to init GL";
@@ -1041,16 +1061,14 @@ private: System::ComponentModel::IContainer^  components;
 				 
 				 this->Label_LayersDistance->Text = L"Расстояние между слоями: "+this->TrackBar_LayersDistance->Value.ToString();
 
-				 this->Label_ClustersCount->Text = L"Максимальное число кластеров: "+this->TrackBar_ClustersCount->Value.ToString();
+				 this->Label_ClustersCount->Text = L"Максимальное число сегментов: "+this->TrackBar_ClustersCount->Value.ToString();
 				 this->Label_IterationsCount->Text = L"Количество итераций алгоритма: "+this->TrackBar_IterationsCount->Value.ToString();
 				 				 
                  InputData = new ScanData();
 				 				 
-				 Clusters_2D = NULL; Clusters_3D = NULL; 
-				 
-				 VoxelsData = NULL;
+				 Segments_2D = NULL; Segments_3D = NULL; VoxelsData = NULL;
 
-				 this->VoxelColor = NULL; this->IsVoxelVisible = NULL;
+				 //this->VoxelColor = NULL; this->IsVoxelVisible = NULL;
 				 
 				 layerTextures = 0;
 			 }
@@ -1070,66 +1088,59 @@ private: System::ComponentModel::IContainer^  components;
 
                float fileSize = (float)(IO::FileInfo(pathToDataFile).Length >> 20);
                 
-			   IsVoxelVisible = new bool [InputData->sizeX*InputData->sizeY*InputData->sizeZ];
-
-			   VoxelColor = new TColor[InputData->sizeX*InputData->sizeY*InputData->sizeZ];
+			   VoxelsData = new TVoxel [InputData->TotalSize];
 
 			   MaxDensity = 0;
 
-			   for (size_t i = 0; i < InputData->sizeX*InputData->sizeY*InputData->sizeZ; ++i) 
+			   for (size_t i = 0; i < InputData->TotalSize; ++i) 
 			   {
-			    IsVoxelVisible[i] = true;
+			    VoxelsData[i].Color_2D = VoxelsData[i].Color_3D = TColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-				VoxelColor[i] = TColor(0.0f, 0.0f, 0.0f, 0.0f);
+				VoxelsData[i].IsVisible_2D = VoxelsData[i].IsVisible_3D = true;
 
-                if (MaxDensity < InputData->data[i]) 
-				{
-                 MaxDensity = InputData->data[i];
-                }
+                if (MaxDensity < InputData->data[i]) MaxDensity = InputData->data[i];
 			   }
 
-					 ProgressBar_Layers->Maximum = InputData->sizeZ;
-					 TrackBar_Layers->Maximum = InputData->sizeZ-1;
-					 TrackBar_Layers->Value = 0;
-					 NumericUpDown_Start->Maximum = InputData->sizeZ-1;
-					 NumericUpDown_Start->Value = 0;
-					 NumericUpDown_Finish->Maximum = InputData->sizeZ-1;
-					 NumericUpDown_Finish->Value = InputData->sizeZ-1;
+			   ProgressBar_Layers->Maximum = InputData->sizeZ;
+			   TrackBar_Layers->Maximum = InputData->sizeZ-1;
+			   TrackBar_Layers->Value = 0;
+			   NumericUpDown_Start->Maximum = InputData->sizeZ-1;
+			   NumericUpDown_Start->Value = 0;
+			   NumericUpDown_Finish->Maximum = InputData->sizeZ-1;
+			   NumericUpDown_Finish->Value = InputData->sizeZ-1;
 
-					 this->Button_VisualizeSelectedClusters->Enabled = false;
+			   this->Button_VisualizeSelectedClusters->Enabled = false;
 
-					 if (this->RadioButton_2D->Checked)
-					 {
-						 this->TrackBar_Layers->Enabled = true;
-						 
-						
-					 }
+			   if (this->RadioButton_2D->Checked)
+			   {
+				this->TrackBar_Layers->Enabled = true;
+			   }
 
-					 if (this->RadioButton_3D->Checked)
-					 {
-						 this->NumericUpDown_Start->Enabled = true;
-						 this->NumericUpDown_Finish->Enabled = true;
-					 }
+			   if (this->RadioButton_3D->Checked)
+			   {
+			    this->NumericUpDown_Start->Enabled = true;
+			    this->NumericUpDown_Finish->Enabled = true;
+			   }
 					
-					 this->TextBox_BrightnessMult->Enabled = true;
+			   this->TextBox_BrightnessMult->Enabled = true;
 
-					 this->Button_Clusterization->Enabled = true;
+			   this->Button_Clusterization->Enabled = true;
 
-					 angleXRotation = angleYRotation = 0.0f;
-                     distance = 600.f;
+			   angleXRotation = angleYRotation = 0.0f;
+               distance = 600.f;
 
-					 TextBox_BrightnessMult->Text = L"30,0";
-                     BrightnessMult = 30.f;
+			   TextBox_BrightnessMult->Text = L"30,0";
+               BrightnessMult = 30.f;
 
-					 GenerateTextures();
+			   GenerateTextures();
                     
-			   }
+			  }
 
-			   } else {
-                     // this->Label_Status->Text = "Ошибка! Некорректное чтение файла.";
+			 } else {
+                     this->Label_Status->Text = "Ошибка! Некорректное чтение файла.";
                  }
 			  } else {
-                 // this->Label_Status->Text = "Ошибка! Файл не найден.";
+                  this->Label_Status->Text = "Ошибка! Файл не найден.";
              } 
 
 			 }
@@ -1144,20 +1155,26 @@ private: System::Void GenerateTextures()
 
 		  float *tmp = new float[4 * InputData->sizeX * InputData->sizeY];
 
-          //float *tmp = new float[2 * InputData->sizeX * InputData->sizeY];
           for (size_t iLayer = 0; iLayer < InputData->sizeZ; ++iLayer) 
 		  {
            for (size_t i = 0; i < InputData->sizeX * InputData->sizeY * 4; i += 4) 
 		   {
 			size_t reducedIndex = i / 4 + iLayer * InputData->sizeX * InputData->sizeY;
-            if (CheckBoxClusters->Checked)     // если кластеры отображаются 
+            if (CheckBoxClusters->Checked)			// если сегменты отображаются 
 			{
-			 if (IsVoxelVisible[reducedIndex])
+			 if (this->RadioButton_2D->Checked && VoxelsData[reducedIndex].IsVisible_2D)
 			 {
-			  tmp[i] = VoxelColor[reducedIndex].R;
-			  tmp[i+1] = VoxelColor[reducedIndex].G;
-			  tmp[i+2] = VoxelColor[reducedIndex].B;
-			  tmp[i+3] = 0.30f*tmp[i]+0.59f*tmp[i+1]+0.11f*tmp[i+2];
+			  tmp[i] = VoxelsData[reducedIndex].Color_2D.R;
+			  tmp[i+1] = VoxelsData[reducedIndex].Color_2D.G;
+			  tmp[i+2] = VoxelsData[reducedIndex].Color_2D.B;
+			  tmp[i+3] = VoxelsData[reducedIndex].Color_2D.A; //= 0.30f*tmp[i]+0.59f*tmp[i+1]+0.11f*tmp[i+2];
+			 }
+			 else if (this->RadioButton_3D->Checked && VoxelsData[reducedIndex].IsVisible_3D)
+			 {
+			  tmp[i] = VoxelsData[reducedIndex].Color_3D.R;
+			  tmp[i+1] = VoxelsData[reducedIndex].Color_3D.G;
+			  tmp[i+2] = VoxelsData[reducedIndex].Color_3D.B;
+			  tmp[i+3] = VoxelsData[reducedIndex].Color_3D.A; //= 0.30f*tmp[i]+0.59f*tmp[i+1]+0.11f*tmp[i+2];
 			 }
 			 else tmp[i+3] = tmp[i+2] = tmp[i+1] = tmp[i] = 0.0f;
 			}
@@ -1166,17 +1183,17 @@ private: System::Void GenerateTextures()
            }
 
            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                     glBindTexture(GL_TEXTURE_2D, layerTextures[iLayer]);
+           glBindTexture(GL_TEXTURE_2D, layerTextures[iLayer]);
 
-                     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+           glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
-                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP);
-                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP);
+           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+           glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-                     //glTexImage2D(GL_TEXTURE_2D, 0, 1, InputData->sizeX, InputData->sizeY, 0, GL_INTENSITY, GL_SHORT, InputData->data + iLayer * InputData->sizeX * InputData->sizeY * sizeof(short)); // не работает, сцуко! :(
-                     glTexImage2D(GL_TEXTURE_2D, 0, 4/*GL_LUMINANCE_ALPHA*/, InputData->sizeX, InputData->sizeY, 0, GL_RGBA, GL_FLOAT, tmp);
+           //glTexImage2D(GL_TEXTURE_2D, 0, 1, InputData->sizeX, InputData->sizeY, 0, GL_INTENSITY, GL_SHORT, InputData->data + iLayer * InputData->sizeX * InputData->sizeY * sizeof(short)); // не работает, сцуко! :(
+           glTexImage2D(GL_TEXTURE_2D, 0, 4/*GL_LUMINANCE_ALPHA*/, InputData->sizeX, InputData->sizeY, 0, GL_RGBA, GL_FLOAT, tmp);
 		  }
 
           delete tmp;
@@ -1191,7 +1208,7 @@ private: System::Void RenderTimer_Tick(System::Object^  sender, System::EventArg
 			 DrawGLScene();
 			 SwapBuffers(hDC);
 		 }
-private: System::Void MainForm_Resize(System::Object^  sender, System::EventArgs^  e) {
+private: System::Void ClusterizationForm_Resize(System::Object^  sender, System::EventArgs^  e) {
 			 GLsizei height = this->RenderingPanel->Height;
                  GLsizei width = this->RenderingPanel->Width;
                  if (height == 0) {
@@ -1212,28 +1229,29 @@ private: System::Void MainForm_Resize(System::Object^  sender, System::EventArgs
                  SwapBuffers(hDC);
 
 		 }
-private: System::Void TrackBar_Layers_ValueChanged(System::Object^  sender, System::EventArgs^  e) {
-			 this->Label_LayerInfo->Text = L"Номер текущего слоя: "+this->TrackBar_Layers->Value.ToString();
+private: System::Void TrackBar_Layers_ValueChanged(System::Object^  sender, System::EventArgs^  e) 
+		 {
+		  this->Label_LayerInfo->Text = L"Номер текущего слоя: "+this->TrackBar_Layers->Value.ToString();
 			 
-			 //GenerateTextures();
-			 
-			 if (this->RadioButton_2D->Checked && Clusters_2D)
-			 {
-			  int clusters_count = this->DataGridView_Clusters->RowCount-1;
-			  size_t z  = this->TrackBar_Layers->Value;
+		  if (this->RadioButton_2D->Checked && Segments_2D)
+		  {
+		   size_t z  = this->TrackBar_Layers->Value;
 
-			  this->DataGridView_Clusters->RowCount = this->NClusters[z]+1;
-			  for (size_t index = 0; index < this->NClusters[z]; ++index)
-			  {
-			   this->DataGridView_Clusters->Rows[index]->Cells[0]->Value = index.ToString();
-			   this->DataGridView_Clusters->Rows[index]->Cells[1]->Value = Clusters_2D[z].at(index).size().ToString();
-			   this->DataGridView_Clusters->Rows[index]->Cells[2]->Value = this->CalcMeanDensity(Clusters_2D[z].at(index)).ToString();
-			   if ((int)index>=clusters_count-1) this->DataGridView_Clusters->Rows[index]->Cells[4]->Value = false;
-			  }
-    		 }
+		   this->DataGridView_Clusters->RowCount = Segments_2D[z].size()+1;
+		   for (size_t index = 0; index < Segments_2D[z].size(); ++index)
+		   {
+		    this->DataGridView_Clusters->Rows[index]->Cells[0]->Value = index.ToString();
+		    this->DataGridView_Clusters->Rows[index]->Cells[1]->Value = Segments_2D[z].at(index).Index.size().ToString();
+		    this->DataGridView_Clusters->Rows[index]->Cells[2]->Value = Segments_2D[z].at(index).MinDensity.ToString();
+		    this->DataGridView_Clusters->Rows[index]->Cells[3]->Value = Segments_2D[z].at(index).MaxDensity.ToString();
+		    this->DataGridView_Clusters->Rows[index]->Cells[4]->Value = this->GetStringOfColor(Segments_2D[z].at(index).Color);
+		    this->DataGridView_Clusters->Rows[index]->Cells[5]->Value = Segments_2D[z].at(index).transparensy.ToString();
+		    this->DataGridView_Clusters->Rows[index]->Cells[6]->Value = Segments_2D[z].at(index).IsVisible;
+		   }
+    	  }  
 		 }
 private: System::Void CheckBoxClusters_Click(System::Object^  sender, System::EventArgs^  e) {
-			 if (this->RadioButton_2D->Checked && Clusters_2D || this->RadioButton_3D->Checked && Clusters_3D)
+			 if (this->RadioButton_2D->Checked && Segments_2D || this->RadioButton_3D->Checked && Segments_3D)
 			 {
 			  DataGridView_Clusters->Enabled = CheckBoxClusters->Checked;
 			 
@@ -1243,28 +1261,29 @@ private: System::Void CheckBoxClusters_Click(System::Object^  sender, System::Ev
 		 }
 private: System::Void Button_Clusterization_Click(System::Object^  sender, System::EventArgs^  e) 
 		 {
-		  this->StaticDelInst_Visible= gcnew MyVisibleDelegate(this, &ClusterizationForm::ChangeVisible);
-		  this->StaticDelInst_Color = gcnew MyColorDelegate(this, &ClusterizationForm::ChangeVoxelColor);
+		  this->StaticDelInst_Visible_2D = gcnew MyVisibleDelegate(this, &ClusterizationForm::ChangeVisible_2D);
+		  this->StaticDelInst_Visible_3D = gcnew MyVisibleDelegate(this, &ClusterizationForm::ChangeVisible_3D);
+		  this->StaticDelInst_Color_2D = gcnew MyColorDelegate(this, &ClusterizationForm::ChangeVoxelColor_2D);
+		  this->StaticDelInst_Color_3D = gcnew MyColorDelegate(this, &ClusterizationForm::ChangeVoxelColor_3D);
 
 		  if (RadioButton_2D->Checked)					// если кластеризация по слоям
 		  {
 		   this->ProgressBar_Layers->Value = 0;
 
-		   NClusters = NULL; Clusters_2D = NULL; Cluster_ID = NULL; VoxelColor = NULL; 
-
-		   NClusters = new size_t [InputData->sizeZ];
-
-		   Clusters_2D = new vector<vector <size_t> > [InputData->sizeZ];
-
-		   Cluster_ID = new size_t [InputData->sizeX*InputData->sizeY*InputData->sizeZ];
-
-	       VoxelColor = new TColor [InputData->sizeX*InputData->sizeY*InputData->sizeZ]; 
-
-		   IsVoxelVisible = new bool [InputData->sizeX*InputData->sizeY*InputData->sizeZ];
-
-		   for (size_t index = 0; index<InputData->sizeX*InputData->sizeY*InputData->sizeZ; ++index)
-			   IsVoxelVisible[index] = true; 
+		   Segments_2D = NULL; 
 		   
+		   //VoxelColor = NULL; 
+
+		   //NClusters = new size_t [InputData->sizeZ];
+
+		   Segments_2D = new vector <TSegment> [InputData->sizeZ];
+
+		   //VoxelColor = new TColor [InputData->TotalSize]; 
+
+		   //IsVoxelVisible = new bool [TotalSize];
+
+		   for (size_t index = 0; index<InputData->TotalSize; ++index) VoxelsData[index].IsVisible_2D = true;
+				   
 		   for (size_t z = 0; z < InputData->sizeZ; ++z)
 		   {
 		    ClusterizationMethod = new KmeansMethod(InputData->GetLayer(z));
@@ -1273,23 +1292,33 @@ private: System::Void Button_Clusterization_Click(System::Object^  sender, Syste
 			
 			Label_Status->Text = L"Выполняется кластеризация данных. Пожалуйста, подождите...";
 						 
-			Clusters_2D[z] = ClusterizationMethod->GetClusters(this->BackgroundWorker);
+			vector <vector <size_t> > TmpIndexVector = ClusterizationMethod->GetClusters(this->BackgroundWorker);
 
-		    NClusters[z] = Clusters_2D[z].size();
+			size_t NumberOfSegments = TmpIndexVector.size();
 
- 		    for (size_t i = 0; i < NClusters[z]; ++i)
+ 		    for (size_t i = 0; i < NumberOfSegments; ++i)
 		    {
-    		 vector <size_t> cluster = Clusters_2D[z].at(i);
+    		 vector <size_t> segment_indexes = TmpIndexVector.at(i);
 
-		     vector<size_t>::iterator iter = cluster.begin();
-			 vector<size_t>::iterator _end = cluster.end();
+			 Segments_2D[z].push_back(TSegment(segment_indexes));		// сохранение нового сегмента
+
+			 Segments_2D[z].at(i).MinDensity = MinDensityOfSegment_2D(z, i);
+			 Segments_2D[z].at(i).MaxDensity = MaxDensityOfSegment_2D(z, i);
+			 
+			 float grayIntensity = (float)(i+1)/NumberOfSegments;		// вычисление интенсивности каждого воксела из сегмента
+
+			 Segments_2D[z].at(i).Color = TColor(grayIntensity, grayIntensity, grayIntensity, grayIntensity);
+
+			 Segments_2D[z].at(i).transparensy = (unsigned char)(255*grayIntensity);
+
+			 Segments_2D[z].at(i).IsVisible = true;
+		     
+			 vector<size_t>::iterator iter = segment_indexes.begin();
+			 vector<size_t>::iterator _end = segment_indexes.end();
 			 for (; iter!=_end; ++iter) 
 			 {
-   			  Cluster_ID[*iter+z*InputData->sizeX*InputData->sizeY] = i;
-			  float grayIntensity = (float)(i+1)/NClusters[z];
-			  VoxelColor[*iter+z*InputData->sizeX*InputData->sizeY] = TColor(grayIntensity, grayIntensity, grayIntensity, grayIntensity);
-			  // управление видимостью воксела
-			 }
+		  	  VoxelsData[*iter+z*InputData->sizeX*InputData->sizeY].Color_2D = TColor(grayIntensity, grayIntensity, grayIntensity, grayIntensity);
+     		 }
 		    }
 
 			// Отображаем ход выполнения процесса
@@ -1300,17 +1329,19 @@ private: System::Void Button_Clusterization_Click(System::Object^  sender, Syste
 		   Label_Status->Text = L"Данные кластеризованы.";
 
 		   size_t z = this->TrackBar_Layers->Value;
-		   this->DataGridView_Clusters->RowCount = this->NClusters[z]+1;
+
+		   this->DataGridView_Clusters->RowCount = Segments_2D[z].size()+1;
 
 		   //вставка в таблицу информации о кластерах для текущего слоя
-		   for (size_t index = 0; index < this->NClusters[z]; ++index)
+		   for (size_t index = 0; index < Segments_2D[z].size(); ++index)
 		   {
 			this->DataGridView_Clusters->Rows[index]->Cells[0]->Value = index.ToString();
-			this->DataGridView_Clusters->Rows[index]->Cells[1]->Value = Clusters_2D[z].at(index).size().ToString();
-			this->DataGridView_Clusters->Rows[index]->Cells[2]->Value = CalcMeanDensity(Clusters_2D[z].at(index)).ToString();
-      //this->DataGridView_Clusters->Rows[index]->Cells[3]->Value = System::Drawing::Color(INT)floor((float)255*(i+1)/NClusters[z])
-			this->DataGridView_Clusters->Rows[index]->Cells[4]->Value = true;
-		    
+			this->DataGridView_Clusters->Rows[index]->Cells[1]->Value = Segments_2D[z].at(index).Index.size().ToString();
+			this->DataGridView_Clusters->Rows[index]->Cells[2]->Value = Segments_2D[z].at(index).MinDensity.ToString();
+			this->DataGridView_Clusters->Rows[index]->Cells[3]->Value = Segments_2D[z].at(index).MaxDensity.ToString();
+			this->DataGridView_Clusters->Rows[index]->Cells[4]->Value = this->GetStringOfColor(Segments_2D[z].at(index).Color);
+			this->DataGridView_Clusters->Rows[index]->Cells[5]->Value = Segments_2D[z].at(index).transparensy.ToString();
+			this->DataGridView_Clusters->Rows[index]->Cells[6]->Value = Segments_2D[z].at(index).IsVisible;
 		   }
 
 		  }
@@ -1319,22 +1350,15 @@ private: System::Void Button_Clusterization_Click(System::Object^  sender, Syste
 		  {
 		   this->ProgressBar_Layers->Value = 0;
 		   
-		   Clusters_3D = NULL; 
+		   Segments_3D = NULL; 
 		   
 		   /* NClusters = NULL;
 		   NClusters = new size_t [1]; */
 
-		   Clusters_3D = new vector<vector <size_t> > [1];
+		   Segments_3D = new vector <TSegment> [1];
 
-		   Cluster_ID = new size_t [InputData->sizeX*InputData->sizeY*InputData->sizeZ];
-
-	       VoxelColor = new TColor [InputData->sizeX*InputData->sizeY*InputData->sizeZ]; 
-
-		   IsVoxelVisible = new bool [InputData->sizeX*InputData->sizeY*InputData->sizeZ];
-
-		   for (size_t index = 0; index<InputData->sizeX*InputData->sizeY*InputData->sizeZ; ++index)
-			   IsVoxelVisible[index] = true;
-
+		   for (size_t index = 0; index<InputData->TotalSize; ++index) VoxelsData[index].IsVisible_3D = true;
+	
 		   ScanData* Data = InputData->GetSubData((size_t)this->NumericUpDown_Start->Value, (size_t)this->NumericUpDown_Finish->Value);
 
 		   this->ClusterizationMethod = new KmeansMethod(Data);
@@ -1342,24 +1366,33 @@ private: System::Void Button_Clusterization_Click(System::Object^  sender, Syste
 		   ClusterizationMethod->SetClustersNumber(this->TrackBar_ClustersCount->Value);
 		   ClusterizationMethod->SetCountIterations(this->TrackBar_IterationsCount->Value);
 
-  			Label_Status->Text = L"Выполняется кластеризация данных. Пожалуйста, подождите...";
+  		   Label_Status->Text = L"Выполняется кластеризация данных. Пожалуйста, подождите...";
 
+		   vector <vector <size_t> > TmpIndexVector = this->ClusterizationMethod->GetClusters(this->BackgroundWorker);
 
-		   Clusters_3D[0] = this->ClusterizationMethod->GetClusters(this->BackgroundWorker);
+		   size_t NumberOfSegments = TmpIndexVector.size();
 
-		   //NClusters[0] = Clusters[0].size();
-
-		   for (size_t i = 0; i < Clusters_3D->size(); ++i)
+		   for (size_t i = 0; i < NumberOfSegments; ++i)
 		   {
-			vector <size_t> cluster = Clusters_3D->at(i);
+			vector <size_t> segment_indexes = TmpIndexVector.at(i);
+			
+			Segments_3D->push_back(TSegment(segment_indexes));
 
-		    vector<size_t>::iterator iter = cluster.begin();
-		    vector<size_t>::iterator _end = cluster.end();
+			Segments_3D->at(i).MinDensity = MinDensityOfSegment_3D((size_t)this->NumericUpDown_Start->Value, i);
+			Segments_3D->at(i).MaxDensity = MaxDensityOfSegment_3D((size_t)this->NumericUpDown_Start->Value, i);
+			Segments_3D->at(i).IsVisible = true;
+			
+			float grayIntensity = (float)(i+1)/NumberOfSegments;
+
+			Segments_3D->at(i).Color = TColor(grayIntensity, grayIntensity, grayIntensity, grayIntensity);
+
+			Segments_3D->at(i).transparensy = (unsigned char)(255*grayIntensity);
+
+		    vector<size_t>::iterator iter = segment_indexes.begin();
+		    vector<size_t>::iterator _end = segment_indexes.end();
 		    for (; iter!=_end; ++iter) 
 		    {
-			 Cluster_ID[*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY] = i;
-			 float grayIntensity = (float)(i+1)/Clusters_3D->size();
-			 VoxelColor[*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY] = TColor(grayIntensity, grayIntensity, grayIntensity, grayIntensity);
+			 VoxelsData[*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY].Color_3D = TColor(grayIntensity, grayIntensity, grayIntensity, grayIntensity);
 			 // управление видимостью воксела
 			}
 		   }
@@ -1369,29 +1402,34 @@ private: System::Void Button_Clusterization_Click(System::Object^  sender, Syste
 		   Label_Status->Text = L"Данные кластеризованы.";
 
 		   //size_t z = this->TrackBar_Layers->Value;
-		   this->DataGridView_Clusters->RowCount = Clusters_3D->size()+1;
+		   this->DataGridView_Clusters->RowCount = Segments_3D->size()+1;
+
+		   int value = Segments_3D->size();
 
 		   //вставка в таблицу информации о кластерах для текущего слоя
-		   for (size_t index = 0; index < this->Clusters_3D->size(); ++index)
+		   for (size_t index = 0; index < Segments_3D->size(); ++index)
 		   {
 			this->DataGridView_Clusters->Rows[index]->Cells[0]->Value = index.ToString();
-			this->DataGridView_Clusters->Rows[index]->Cells[1]->Value = Clusters_3D->at(index).size().ToString();
-			this->DataGridView_Clusters->Rows[index]->Cells[2]->Value = CalcMeanDensity(Clusters_3D->at(index)).ToString();
-			this->DataGridView_Clusters->Rows[index]->Cells[4]->Value = true;
-		    
+			this->DataGridView_Clusters->Rows[index]->Cells[1]->Value = Segments_3D->at(index).Index.size().ToString();
+			this->DataGridView_Clusters->Rows[index]->Cells[2]->Value = Segments_3D->at(index).MinDensity.ToString();
+			this->DataGridView_Clusters->Rows[index]->Cells[3]->Value = Segments_3D->at(index).MaxDensity.ToString();
+			this->DataGridView_Clusters->Rows[index]->Cells[4]->Value = this->GetStringOfColor(Segments_3D->at(index).Color);
+			//int value = Segments_3D->size();
+			this->DataGridView_Clusters->Rows[index]->Cells[5]->Value =	Segments_3D->at(index).transparensy.ToString(); 
+
+			this->DataGridView_Clusters->Rows[index]->Cells[6]->Value = Segments_3D->at(index).IsVisible;
 		   }
 		  }
 
+		  GenerateTextures();
+
 		  if (this->CheckBoxClusters->Checked)
 			  this->Button_VisualizeSelectedClusters->Enabled = true;
-
 		 }
 private: System::Void TrackBar_ClustersCount_ValueChanged(System::Object^  sender, System::EventArgs^  e) 
 		 {
 			 this->Label_ClustersCount->Text = L"Максимальное число кластеров: "+
 											   this->TrackBar_ClustersCount->Value;
-			 
-
 		 }
 private: System::Void TrackBar_IterationsCount_ValueChanged(System::Object^  sender, System::EventArgs^  e) 
 		 {
@@ -1413,64 +1451,55 @@ public: System::Void BackgroundWorker_ProgressChanged(System::Object^  sender, S
 private: System::Void BackgroundWorker_RunWorkerCompleted(System::Object^  sender, System::ComponentModel::RunWorkerCompletedEventArgs^  e) {
 		 }
 
-private: System::Void Button_VisualizeSelectedClusters_Click(System::Object^  sender, System::EventArgs^  e) {
-			 /*if (Clusters!=NULL)
-			 {*/
-			 bool* IsVisible = new bool [InputData->sizeX*InputData->sizeY*InputData->sizeZ];
-			 //TColor* VoxelColor = new TColor [InputData->sizeX*InputData->sizeY*InputData->sizeZ];
-			 
-			 if (this->RadioButton_2D->Checked)
-			 {
+private: System::Void Button_VisualizeSelectedClusters_Click(System::Object^  sender, System::EventArgs^  e) 
+		 {
+		  if (this->RadioButton_2D->Checked)
+		  {
+		   size_t z = (size_t)this->TrackBar_Layers->Value;
 
-			 for (size_t z = 0; z < InputData->sizeZ; ++z)
-			 for (int i = 0; i<min((int)this->DataGridView_Clusters->RowCount-1, (int)NClusters[z]); ++i)
+		   for (size_t i = 0; i<Segments_2D[z].size(); ++i)
 				
-				 {
-					vector<size_t>::iterator iter = Clusters_2D[z].at(i).begin();
-					vector<size_t>::iterator _end = Clusters_2D[z].at(i).end();
-					for (; iter!=_end; ++iter)
-					{
-						//System::Drawing::Color tmpColor = (System::Drawing::Color)this->DataGridView_Clusters->Rows[i]->Cells[3]->Value;
-						//VoxelColor[*iter+z*InputData->sizeX*InputData->sizeY] = TColor(tmpColor.R, tmpColor.G, tmpColor.B);
-						if ((bool)this->DataGridView_Clusters->Rows[i]->Cells[4]->Value ==true)
-							IsVisible[*iter+z*InputData->sizeX*InputData->sizeY] = true;
-						else IsVisible[*iter+z*InputData->sizeX*InputData->sizeY] = false;
-					}
-				 }
-			 }
+		   {
+			Segments_2D[z].at(i).IsVisible = (bool)this->DataGridView_Clusters->Rows[i]->Cells[6]->Value;
 
-			 if (this->RadioButton_3D->Checked)
-			 {
-         for (size_t i = 0; i<Clusters_3D->size(); ++i)
-				{
-          vector <size_t>::iterator iter = Clusters_3D->at(i).begin();
-					vector <size_t>::iterator _end = Clusters_3D->at(i).end();
-					for (; iter!=_end; ++iter)
-					{
-					 if ((bool)this->DataGridView_Clusters->Rows[i]->Cells[4]->Value ==true)
-						 IsVisible[*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY] = true;
-					 else IsVisible[*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY] = false;
-					}
-				}
-			 }
+			vector<size_t>::iterator iter = Segments_2D[z].at(i).Index.begin();
+			vector<size_t>::iterator _end = Segments_2D[z].at(i).Index.end();
+			for (; iter!=_end; ++iter)
+			{
+		 	 if ((bool)this->DataGridView_Clusters->Rows[i]->Cells[6]->Value ==true)
+			 this->StaticDelInst_Visible_2D(*iter+z*InputData->sizeX*InputData->sizeY, true);
+			 else this->StaticDelInst_Visible_2D(*iter+z*InputData->sizeX*InputData->sizeY, false);
+			}
+		   }
+		  }
 
-			 this->StaticDelInst_Visible(IsVisible); 
+		  if (this->RadioButton_3D->Checked)
+		  {
+		   for (size_t i = 0; i<Segments_3D->size(); ++i)
+		   {
+			Segments_3D->at(i).IsVisible = (bool)this->DataGridView_Clusters->Rows[i]->Cells[6]->Value;
 
-			 GenerateTextures();
+			vector <size_t>::iterator iter = Segments_3D->at(i).Index.begin();
+			vector <size_t>::iterator _end = Segments_3D->at(i).Index.end();
+			for (; iter!=_end; ++iter)
+			{
+			 if (*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY<InputData->TotalSize)
+			 this->StaticDelInst_Visible_3D(*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY, (bool)this->DataGridView_Clusters->Rows[i]->Cells[6]->Value);
+   			}
+		   }
+		  }
+
+		  GenerateTextures();
 		 }
 private: System::Void NumericUpDown_Start_ValueChanged(System::Object^  sender, System::EventArgs^  e) 
 		 {
 			 if (this->NumericUpDown_Start->Value > this->NumericUpDown_Finish->Value)
 				 this->NumericUpDown_Start->Value = this->NumericUpDown_Finish->Value; 
-
-			 //GenerateTextures();
 		 }
 private: System::Void NumericUpDown_Finish_ValueChanged(System::Object^  sender, System::EventArgs^  e) 
 		 {
 			 if (this->NumericUpDown_Finish->Value < this->NumericUpDown_Finish->Value)
 				 this->NumericUpDown_Finish->Value = this->NumericUpDown_Start->Value;
-
-			 //GenerateTextures();
 		 }
 private: System::Void RenderingPanel_MouseMove(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) 
 		 {
@@ -1512,41 +1541,51 @@ private: System::Void CheckBox_Transparency_CheckedChanged(System::Object^  send
 
 private: System::Void DataGridView_Clusters_CellClick(System::Object^  sender, System::Windows::Forms::DataGridViewCellEventArgs^  e) 
 		 {
-			 if (e->ColumnIndex==3)
+			 if (e->ColumnIndex==4)
 			 {
 			  if (this->ColorDialog->ShowDialog()== Windows::Forms::DialogResult::OK)
 			  {
 			   System::Drawing::Color selectedColor = ColorDialog->Color;
-			   this->DataGridView_Clusters->Rows[e->RowIndex]->Cells[3]->Value = selectedColor.ToString();
+			   TColor tmpColor = TColor((float)selectedColor.R/255, (float)selectedColor.G/255, (float)selectedColor.B/255, (float)selectedColor.A/255);
+			   this->DataGridView_Clusters->Rows[e->RowIndex]->Cells[4]->Value = this->GetStringOfColor(tmpColor);
+			   this->DataGridView_Clusters->Rows[e->RowIndex]->Cells[5]->Value = selectedColor.A.ToString();
+
 			   if (this->RadioButton_2D->Checked)
 			   {
-			   for (size_t z = 0; z < InputData->sizeZ; ++z)
-			   {
-				if (e->RowIndex < min(this->DataGridView_Clusters->RowCount-1, (int)NClusters[z]))
-			   {
-				vector<size_t>::iterator iter = Clusters_2D[z].at(e->RowIndex).begin();
-				vector<size_t>::iterator _end = Clusters_2D[z].at(e->RowIndex).end();
-			    for (; iter!=_end; ++iter)
+				size_t z = (size_t)this->TrackBar_Layers->Value;
+			    //for (size_t z = 0; z < InputData->sizeZ; ++z)
 			    {
-				 TColor tmpColor = TColor((float)selectedColor.R/255, (float)selectedColor.G/255, (float)selectedColor.B/255, (float)selectedColor.A/255);
-				 this->StaticDelInst_Color(*iter+z*InputData->sizeX*InputData->sizeY, tmpColor);
-			     /* if ((bool)this->DataGridView_Clusters->Rows[index]->Cells[4]->Value ==true)
-			     IsVoxelVisible[*iter+z*InputData->sizeX*InputData->sizeY] = true;
-			     else IsVoxelVisible[*iter+z*InputData->sizeX*InputData->sizeY] = false; 
-			     this->StaticDelInst_Visible(*iter+z*InputData->sizeX*InputData->sizeY, bool_value);*/
-			    }
-  			   }
-			   }
+				//if (e->RowIndex < min(this->DataGridView_Clusters->RowCount-1, (int)NClusters[z]))
+			    {
+				 Segments_2D[z].at(e->RowIndex).Color = tmpColor;
+				 Segments_2D[z].at(e->RowIndex).transparensy = selectedColor.A;
+
+				 vector<size_t>::iterator iter = Segments_2D[z].at(e->RowIndex).Index.begin();
+				 vector<size_t>::iterator _end = Segments_2D[z].at(e->RowIndex).Index.end();
+			     for (; iter!=_end; ++iter)
+			     {
+				  this->StaticDelInst_Color_2D(*iter+z*InputData->sizeX*InputData->sizeY, tmpColor);
+			      /* if ((bool)this->DataGridView_Clusters->Rows[index]->Cells[4]->Value ==true)
+			      IsVoxelVisible[*iter+z*InputData->sizeX*InputData->sizeY] = true;
+			      else IsVoxelVisible[*iter+z*InputData->sizeX*InputData->sizeY] = false; 
+			      this->StaticDelInst_Visible(*iter+z*InputData->sizeX*InputData->sizeY, bool_value);*/
+			     }
+				}
+				}
 			   }
 			   
 			   if (this->RadioButton_3D->Checked)
 			   {
-				vector<size_t>::iterator iter = Clusters_3D->at(e->RowIndex).begin();
-				vector<size_t>::iterator _end = Clusters_3D->at(e->RowIndex).end();
+				Segments_3D->at(e->RowIndex).Color = TColor((float)selectedColor.R/255, (float)selectedColor.G/255, (float)selectedColor.B/255, (float)selectedColor.A/255);
+				Segments_3D->at(e->RowIndex).transparensy = selectedColor.A;
+
+				vector<size_t>::iterator iter = Segments_3D->at(e->RowIndex).Index.begin();
+				vector<size_t>::iterator _end = Segments_3D->at(e->RowIndex).Index.end();
 			    for (; iter!=_end; ++iter)
 			    {
-				 TColor tmpColor = TColor((float)selectedColor.R/255, (float)selectedColor.G/255, (float)selectedColor.B/255, (float)selectedColor.A/255);
-				 this->StaticDelInst_Color(*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY, tmpColor);
+				 //TColor tmpColor = TColor((float)selectedColor.R/255, (float)selectedColor.G/255, (float)selectedColor.B/255, (float)selectedColor.A/255);
+				 if (*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY<InputData->TotalSize)
+				 this->StaticDelInst_Color_3D(*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY, tmpColor);
 			     /* if ((bool)this->DataGridView_Clusters->Rows[index]->Cells[4]->Value ==true)
 			     IsVoxelVisible[*iter+z*InputData->sizeX*InputData->sizeY] = true;
 			     else IsVoxelVisible[*iter+z*InputData->sizeX*InputData->sizeY] = false; 
@@ -1558,41 +1597,102 @@ private: System::Void DataGridView_Clusters_CellClick(System::Object^  sender, S
 			  }
 			 }
 		     
-			 /*if (e->ColumnIndex==4)
-			 {
-			  int index = e->RowIndex;
-
-			  this->DataGridView_Clusters->Rows[index]->Cells[4]->Value = ! this->DataGridView_Clusters->Rows[index]->Cells[4]->Value;
-
-			  if (InputData)
-			  {
-			   for (size_t z = 0; z < InputData->sizeZ; ++z)
-			   if (index<min(this->DataGridView_Clusters->RowCount-1, (int)NClusters[z]))
-			   {
-			    vector<size_t>::iterator iter = Clusters[z].at(index).begin();
-			    vector<size_t>::iterator _end = Clusters[z].at(index).end();
-			    for (; iter!=_end; ++iter)
-			    {
-				 bool bool_value = (bool)this->DataGridView_Clusters->Rows[index]->Cells[4]->Value;
-			     /* if ((bool)this->DataGridView_Clusters->Rows[index]->Cells[4]->Value ==true)
-			     IsVoxelVisible[*iter+z*InputData->sizeX*InputData->sizeY] = true;
-			     else IsVoxelVisible[*iter+z*InputData->sizeX*InputData->sizeY] = false; 
-			     this->StaticDelInst_Visible(*iter+z*InputData->sizeX*InputData->sizeY, bool_value);
-			    }
-  			   }
-			  }
-			  
-			 }*/
+			 
          }
 			
 		 
 private: System::Void DataGridView_Clusters_CellValueChanged(System::Object^  sender, System::Windows::Forms::DataGridViewCellEventArgs^  e) 
 		 {
-			 
+			if ((e->ColumnIndex==5) && InputData)
+			{
+			 int index = e->RowIndex;
+
+			 unsigned char tmp_value = 0;
+
+			 try 
+			 {
+			  tmp_value = 
+			  (unsigned char)System::Int32::Parse((String^)this->DataGridView_Clusters->Rows[index]->Cells[5]->Value);
+			 } 
+			 catch (...)
+			 {
+			  Label_Status->Text = L"Некорректный числовой формат.";
+			 }
+
+			 //this->DataGridView_Clusters->Rows[index]->Cells[5]->Value = ! this->DataGridView_Clusters->Rows[index]->Cells[4]->Value;
+
+			 if (this->RadioButton_2D->Checked)
+		  
+			 {
+			  size_t z = (size_t)this->TrackBar_Layers->Value;
+
+			  Segments_2D[z].at(index).transparensy = tmp_value;
+		   
+			  vector<size_t>::iterator iter = Segments_2D[z].at(index).Index.begin();
+		      vector<size_t>::iterator _end = Segments_2D[z].at(index).Index.end();
+			  for (; iter!=_end; ++iter)
+			  {
+			   TColor tmpColor = VoxelsData[*iter+z*InputData->sizeX*InputData->sizeY].Color_2D;
+			   this->StaticDelInst_Color_2D(*iter+z*InputData->sizeX*InputData->sizeY, TColor(tmpColor.R, tmpColor.G, tmpColor.B, (float)tmp_value/255));
+			  }
+			  
+				GenerateTextures();
+			  }
+
+			  if (this->RadioButton_3D->Checked)
+			  {
+			   Segments_3D->at(index).transparensy = tmp_value;
+			   vector<size_t>::iterator iter = Segments_3D->at(index).Index.begin();
+			   vector<size_t>::iterator _end = Segments_3D->at(index).Index.end();
+			   for (; iter!=_end; ++iter)
+			   if (*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY<InputData->TotalSize)
+			   {
+				TColor tmpColor = VoxelsData[*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY].Color_3D;
+				
+				this->StaticDelInst_Color_3D(*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY, TColor(tmpColor.R, tmpColor.G, tmpColor.B, (float)tmp_value/255));
+			   }
+
+			   GenerateTextures();
+			  }
+			  
+			}
+
+			if ((e->ColumnIndex == 6) && InputData)
+			{
+			 int index = e->RowIndex;
+
+			 if (this->RadioButton_2D->Checked)
+			 {
+			  size_t z = (size_t)this->TrackBar_Layers->Value;
+			  Segments_2D[z].at(index).IsVisible = (bool)this->DataGridView_Clusters->Rows[index]->Cells[6]->Value;
+			  vector <size_t>::iterator iter = Segments_2D[z].at(index).Index.begin();
+			  vector <size_t>::iterator _end = Segments_2D[z].at(index).Index.end();
+			  for (; iter!=_end; ++iter)
+			  {
+			   this->StaticDelInst_Visible_2D(*iter+z*InputData->sizeX*InputData->sizeY, Segments_2D[z].at(index).IsVisible);
+			  }
+					
+			 }
+
+			 if (this->RadioButton_3D->Checked)
+			 {
+			  Segments_3D->at(index).IsVisible = (bool)this->DataGridView_Clusters->Rows[index]->Cells[6]->Value;
+			  vector <size_t>::iterator iter = Segments_3D->at(index).Index.begin();
+			  vector <size_t>::iterator _end = Segments_3D->at(index).Index.end();
+			  for (; iter!=_end; ++iter)
+			  {
+			   if (*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY<InputData->TotalSize)
+			   this->StaticDelInst_Visible_3D(*iter+(size_t)this->NumericUpDown_Start->Value*InputData->sizeX*InputData->sizeY, Segments_3D->at(index).IsVisible);
+			  }
+					
+			 }
+				
+			 GenerateTextures();
+			}
 		 }
 private: System::Void RadioButton_3D_Click(System::Object^  sender, System::EventArgs^  e) 
 		 {
-			 if (InputData&&InputData->data) 
+			 if (InputData && InputData->data) 
 			 {
 			  this->ProgressBar_Layers->Maximum = 1;
 
@@ -1604,77 +1704,87 @@ private: System::Void RadioButton_3D_Click(System::Object^  sender, System::Even
 			  this->NumericUpDown_Finish->Enabled = true;
 			  this->TrackBar_Layers->Enabled = false;
 
-			  if (Clusters_3D)  // если кластеры уже найдены
+			  if (Segments_3D)  // если кластеры уже найдены
 			  {
-				  this->DataGridView_Clusters->RowCount = Clusters_3D->size()+1;
-				  for (size_t index = 0; index < Clusters_3D->size(); ++index)
-				  {
-					  this->DataGridView_Clusters->Rows[index]->Cells[0]->Value = index.ToString();
-					  this->DataGridView_Clusters->Rows[index]->Cells[1]->Value = Clusters_3D->at(index).size().ToString();
-					  this->DataGridView_Clusters->Rows[index]->Cells[2]->Value = this->CalcMeanDensity(Clusters_3D->at(index)).ToString();
-					  //this->DataGridView_Clusters->Rows[index]->Cells[3]->Value = Clusters_3D->VoxelColor[
-					 
-				  }
+			   this->DataGridView_Clusters->RowCount = Segments_3D->size()+1;
 
-				  if (CheckBoxClusters->Checked) 
-			      {
-				   this->DataGridView_Clusters->Enabled = true; 
-				   this->Button_VisualizeSelectedClusters->Enabled = true; 
-			      }
+			   for (size_t index = 0; index < Segments_3D->size(); ++index)
+			   {
+			    this->DataGridView_Clusters->Rows[index]->Cells[0]->Value = index.ToString();
+			    this->DataGridView_Clusters->Rows[index]->Cells[1]->Value = Segments_3D->at(index).Index.size().ToString();
+			    this->DataGridView_Clusters->Rows[index]->Cells[2]->Value = Segments_3D->at(index).MinDensity.ToString();
+			    this->DataGridView_Clusters->Rows[index]->Cells[3]->Value = Segments_3D->at(index).MaxDensity.ToString();
+                this->DataGridView_Clusters->Rows[index]->Cells[4]->Value = this->GetStringOfColor(Segments_3D->at(index).Color);
+			    this->DataGridView_Clusters->Rows[index]->Cells[5]->Value = Segments_3D->at(index).transparensy.ToString();
+			    this->DataGridView_Clusters->Rows[index]->Cells[6]->Value = Segments_3D->at(index).IsVisible; 
+			   }
+
+			   if (CheckBoxClusters->Checked) 
+			   {
+			    this->DataGridView_Clusters->Enabled = true; 
+			    this->Button_VisualizeSelectedClusters->Enabled = true; 
+			   }
 			  }
+			  
+			 
 			  else 
 				  
-			   {
-				   this->DataGridView_Clusters->Enabled = false; 
-				   this->Button_VisualizeSelectedClusters->Enabled = false; 
-			   }
+			  {
+				  this->DataGridView_Clusters->RowCount = 1; 
+				  this->DataGridView_Clusters->Enabled = false;
+				  this->Button_VisualizeSelectedClusters->Enabled = false; 
+			  }
+			  
+			  GenerateTextures();
 			 }
 			 else this->ProgressBar_Layers->Maximum = 0;
 		 }
 private: System::Void RadioButton_2D_Click(System::Object^  sender, System::EventArgs^  e) 
 		 {
-			 if (InputData && InputData->data) 
-			 {
-			  this->ProgressBar_Layers->Maximum = InputData->sizeZ;
+		  if (InputData && InputData->data) 
+		  {
+		   this->ProgressBar_Layers->Maximum = InputData->sizeZ;
 
-			  if (this->ProgressBar_Iterations->Value == this->ProgressBar_Iterations->Maximum)
-				  this->ProgressBar_Layers->Value = this->ProgressBar_Layers->Maximum;
-			  else this->ProgressBar_Layers->Value = 0;
+		   if (this->ProgressBar_Iterations->Value == this->ProgressBar_Iterations->Maximum)
+		   this->ProgressBar_Layers->Value = this->ProgressBar_Layers->Maximum;
+		   else this->ProgressBar_Layers->Value = 0;
 
-			  this->NumericUpDown_Start->Enabled = false;
-			  this->NumericUpDown_Finish->Enabled = false;
-			  this->TrackBar_Layers->Enabled = true;
+		   this->NumericUpDown_Start->Enabled = false;
+		   this->NumericUpDown_Finish->Enabled = false;
+		   this->TrackBar_Layers->Enabled = true;
 
-			  if (Clusters_2D)								// если кластеры уже найдены
-			  {
-   			   size_t z = (size_t)this->TrackBar_Layers->Value;
+		   if (Segments_2D)										// если кластеры уже найдены
+		   {
+   		    size_t z = (size_t)this->TrackBar_Layers->Value;
 
-			   this->DataGridView_Clusters->RowCount = Clusters_2D[z].size()+1;
+		    this->DataGridView_Clusters->RowCount = Segments_2D[z].size()+1;
 
-			   for (size_t index = 0; index < Clusters_2D[z].size(); ++index)
-			   {
-				   this->DataGridView_Clusters->Rows[index]->Cells[0]->Value = index.ToString();
-				   this->DataGridView_Clusters->Rows[index]->Cells[1]->Value = Clusters_2D[z].at(index).size().ToString();
-				   this->DataGridView_Clusters->Rows[index]->Cells[2]->Value = CalcMeanDensity(Clusters_2D[z].at(index)).ToString();
-				   // информация о цвете кластера
-				   // информация о видимости кластера
-			   }
+		    for (size_t index = 0; index < Segments_2D[z].size(); ++index)
+		    {
+		     this->DataGridView_Clusters->Rows[index]->Cells[0]->Value = index.ToString();
+		     this->DataGridView_Clusters->Rows[index]->Cells[1]->Value = Segments_2D[z].at(index).Index.size().ToString();
+		     this->DataGridView_Clusters->Rows[index]->Cells[2]->Value = Segments_2D[z].at(index).MinDensity.ToString();
+			 this->DataGridView_Clusters->Rows[index]->Cells[3]->Value = Segments_2D[z].at(index).MaxDensity.ToString();
+			 this->DataGridView_Clusters->Rows[index]->Cells[4]->Value = GetStringOfColor(Segments_2D[z].at(index).Color);
+			 this->DataGridView_Clusters->Rows[index]->Cells[5]->Value = Segments_2D[z].at(index).transparensy.ToString();
+			 this->DataGridView_Clusters->Rows[index]->Cells[6]->Value = Segments_2D[z].at(index).IsVisible;
+			}
 			   
-			   if (CheckBoxClusters->Checked) 
-			   {
-				   this->DataGridView_Clusters->Enabled = true; 
-				   this->Button_VisualizeSelectedClusters->Enabled = true; 
-			   }
-			  }
-			  else 
-			   {
-				   this->DataGridView_Clusters->Enabled = false; 
-				   this->Button_VisualizeSelectedClusters->Enabled = false; 
-			   }
-			 }
-			 else this->ProgressBar_Layers->Maximum = 0;
+			if (CheckBoxClusters->Checked) 
+			{
+			 this->DataGridView_Clusters->Enabled = true; 
+			 this->Button_VisualizeSelectedClusters->Enabled = true; 
+			}
+		   }
+		   else 
+		   {
+		    this->DataGridView_Clusters->Enabled = false; 
+			this->Button_VisualizeSelectedClusters->Enabled = false; 
+		   }
 
-			
+		   GenerateTextures();
+		  }
+		  else this->ProgressBar_Layers->Maximum = 0;
 		 }
 private: System::Void CheckBoxClusters_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
 			 GenerateTextures();
@@ -1682,6 +1792,10 @@ private: System::Void CheckBoxClusters_CheckedChanged(System::Object^  sender, S
 private: System::Void TrackBar_LayersDistance_ValueChanged(System::Object^  sender, System::EventArgs^  e) {
 			 this->Label_LayersDistance->Text = L"Расстояние между слоями: "+
 												this->TrackBar_LayersDistance->Value.ToString();
+		 }
+private: System::Void ClusterizationForm_FormClosing(System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e) {
+			 e->Cancel = true;
+			 Hide();
 		 }
 };
 }
