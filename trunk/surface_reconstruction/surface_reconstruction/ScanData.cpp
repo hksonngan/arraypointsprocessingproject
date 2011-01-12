@@ -14,6 +14,7 @@ ScanData::ScanData()
  data = 0;
  sizeX = sizeY = sizeZ = 0;
  scaleX = scaleY = scaleZ = 0;
+ TotalSize = 0;
 }
 
 ScanData::ScanData(Layer layer)
@@ -21,6 +22,7 @@ ScanData::ScanData(Layer layer)
 	sizeX = layer.sizeX;
 	sizeY = layer.sizeY;
 	sizeZ = 1;
+	TotalSize = sizeX*sizeY*sizeZ;
 	data = layer.data;
 	scaleX = layer.scaleX;
 	scaleY = layer.scaleY;
@@ -36,6 +38,7 @@ void ScanData::ReleaseResources()
  data = NULL;
  sizeX = sizeY = sizeZ = 0;
  scaleX = scaleY = scaleZ = 0;
+ TotalSize = 0;
 }
 
 bool ScanData::LoadData(const char *pathToBinFile) 
@@ -44,19 +47,21 @@ bool ScanData::LoadData(const char *pathToBinFile)
 
  if (!fs) return false;
     
- ReleaseResources();
+ //ReleaseResources();
 
  fs.read((char*)&sizeX, sizeof(int));
  fs.read((char*)&sizeY, sizeof(int));
  fs.read((char*)&sizeZ, sizeof(int));
 
+ TotalSize = sizeX*sizeY*sizeZ;
+
  fs.read((char*)&scaleX, sizeof(float));
  fs.read((char*)&scaleY, sizeof(float));
  fs.read((char*)&scaleZ, sizeof(float));
 
- data = new short[sizeX * sizeY * sizeZ];
+ data = new short[TotalSize];
 
- fs.read((char*)data, sizeof(short) * sizeX * sizeY * sizeZ);
+ fs.read((char*)data, sizeof(short) * TotalSize);
 
  fs.close();
 
@@ -72,6 +77,8 @@ ScanData* ScanData::GetSubData(size_t z_first, size_t z_last)
  result->sizeY = sizeY;
  result->sizeZ = z_last-z_first+1;
 
+ TotalSize = sizeX*sizeY*sizeZ;
+
  result->scaleX = scaleX;
  result->scaleY = scaleY;
  result->scaleZ = scaleZ;
@@ -79,7 +86,7 @@ ScanData* ScanData::GetSubData(size_t z_first, size_t z_last)
  return result;
 }
 
-Layer ScanData::GetLayer(size_t z) { return Layer(data + sizeX*sizeY*z, sizeX, sizeY, scaleX, scaleY); }
+Layer ScanData::GetLayer(size_t z) { return Layer(data + z*sizeX*sizeY, sizeX, sizeY, scaleX, scaleY); }
 
 short& ScanData::GetDensity(Layer &layer, size_t x, size_t y) { return layer.data[x + y * layer.sizeX]; }
 
