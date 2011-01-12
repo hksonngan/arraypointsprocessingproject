@@ -1027,7 +1027,8 @@ private: System::Windows::Forms::TrackBar^  trackBarBrightMult;
                          radioButtonRenderTypeVBO_CheckedChanged(sender, e);
 
                          generateTextures();
-                         StaticDelInst(data);
+						 if (StaticDelInst)
+							StaticDelInst(data);
                      } else {
                          this->labelStatus->Text = "Error. Incorrect reading input data file.";
                      }

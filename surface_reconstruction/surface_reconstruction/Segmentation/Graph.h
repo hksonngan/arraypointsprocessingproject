@@ -11,7 +11,7 @@ public:
     GraphVoxel(int maxCountSegments);
 
 protected:
-    int maxCountSegments;
+	int maxCountSegments;
     int currentCountSegments;
     int* segments;
 };
@@ -34,7 +34,8 @@ class Segment
 public:
     size_t сapacity;//количество тогчек
     Voxel* voxel;//индексы в общем массиве
-    short weightSegment;//вес сегмента(максимальный перепад между точками)
+    short maxWeight;//максимальнывй вес сегмента(максимальное значение плотности)
+	short minWeight;
     size_t indexSegment;//индекс в сегменте
     Segment* next;
 
@@ -73,6 +74,7 @@ public:
     short step;
     size_t indexSegments;
     size_t countSegments;
+	size_t minVoxel;
 
     //конструктор
     SegmentsTree();

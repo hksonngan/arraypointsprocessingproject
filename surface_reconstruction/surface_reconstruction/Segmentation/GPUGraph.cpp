@@ -206,7 +206,8 @@ LayerSegmentsTree2::LayerSegmentsTree2()
 	indexVoxel = 0;
 	startIndexVoxel = 0;
 	countVoxel = 0;
-	weightSegment = 0;
+	maxWeight = 0;
+	minWeight = 0;
 }
 
 void LayerSegmentsTree2::CreateData(size_t* index, size_t count, ScanData* data)
@@ -217,7 +218,8 @@ void LayerSegmentsTree2::CreateData(size_t* index, size_t count, ScanData* data)
 	data->sizeX = segmentsTree->scanData->sizeX;
 	data->sizeY = segmentsTree->scanData->sizeY;
 	data->sizeZ = segmentsTree->scanData->sizeZ;
-	data->data = new short [data->sizeX * data->sizeY * data->sizeZ];
+	if (data->data == 0)
+		data->data = new short [data->sizeX * data->sizeY * data->sizeZ];
 	for (size_t i = 0; i < data->sizeX * data->sizeY * data->sizeZ; i++)
 		data->data[i] = 0;
 
@@ -269,7 +271,8 @@ void SegmentsTree2::CreateRoot(ScanData* data)
 	root->indexVoxel = new Voxel2 [dim + 2];
 	root->segmentCount = dim;
 	root->startIndexVoxel  = new size_t [dim + 2];
-	root->weightSegment = new short [dim + 2];
+	root->maxWeight = new short [dim + 2];
+	root->minWeight = new short [dim + 2];
 
 	for (size_t i = 0; i < dim; i++)
 	{
@@ -277,7 +280,8 @@ void SegmentsTree2::CreateRoot(ScanData* data)
 		root->indexSegments[i] = i;
 		root->indexVoxel[i].index = i;
 		root->startIndexVoxel[i] = i;
-		root->weightSegment[i] = scanData->data[i];	
+		root->maxWeight[i] = scanData->data[i];	
+		root->minWeight[i] = scanData->data[i];	
 	}
 
 	root->segmentsTree = this;
@@ -372,7 +376,7 @@ LayerSegmentsTree2* SegmentsTree2::CreateNewLayer()
 	{
 		startIndexVoxel[i] = oldLayer->startIndexVoxel[i];
 		countVoxel[i] = oldLayer->countVoxel[i];
-		weightSegment[i] = oldLayer->weightSegment[i];
+		weightSegment[i] = oldLayer->maxWeight[i];
 	}
 
 	size_t tt = sizeof(short);
@@ -507,15 +511,18 @@ LayerSegmentsTree2* SegmentsTree2::CreateNewLayer()
 
 	newLayer->countVoxel = new size_t [newLayer->segmentCount + 2];
 	newLayer->startIndexVoxel = new size_t [newLayer->segmentCount + 2];
-	newLayer->weightSegment = new short [newLayer->segmentCount + 2];
+	newLayer->maxWeight = new short [newLayer->segmentCount + 2];
+	newLayer->minWeight = new short [newLayer->segmentCount + 2];
 
 	size_t ind = 0;
 	Voxel2* voxel = 0;
 	newLayer->maxCapacity = 0;
 	size_t count = 0;
 	size_t c2 = 0;
+	short minw = 0;
 	for (int i = 0; i < oldLayer->segmentCount; i++)
 	{
+		minw = 0;
 		if (isNotSegmentVisit[i])
 		{
 			voxel = &newLayer->indexVoxel[startIndexVoxel[i]];
@@ -524,11 +531,14 @@ LayerSegmentsTree2* SegmentsTree2::CreateNewLayer()
 				newLayer->indexSegments[voxel->index] = ind;
 				voxel = voxel->next;
 				count++;
+				if (minw > scanData->data[voxel->index])
+					minw = scanData->data[voxel->index];
 			}
 			newLayer->countVoxel[ind] = countVoxel[i];
 			c2 += countVoxel[i];
 			newLayer->startIndexVoxel[ind] = startIndexVoxel[i];
-			newLayer->weightSegment[ind] = weightSegment[i];
+			newLayer->maxWeight[ind] = weightSegment[i];
+			newLayer->minWeight[ind] = minw;
 			newLayer->maxCapacity = max (newLayer->maxCapacity, newLayer->countVoxel[ind]);
 			ind++;
 		}
