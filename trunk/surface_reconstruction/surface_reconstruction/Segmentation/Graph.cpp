@@ -4,7 +4,7 @@
 #include <stack>
 
 #define max(a,b)            (((a) > (b)) ? (a) : (b))
-
+#define min(a,b)            (((a) < (b)) ? (a) : (b))
 //Voxel
 Voxel::Voxel()
 {
@@ -18,7 +18,8 @@ Segment::Segment()
 {
 
     voxel = 0;
-    weightSegment = 0;
+    maxWeight = 0;
+	minWeight = 0;
     indexSegment = 0;
     next = 0;
 
@@ -45,7 +46,8 @@ void LayerSegmentsTree::CreateData(size_t* index, size_t count, ScanData* data)
     data->sizeX = segmentsTree->scanData->sizeX;
     data->sizeY = segmentsTree->scanData->sizeY;
     data->sizeZ = segmentsTree->scanData->sizeZ;
-    data->data = new short [data->sizeX * data->sizeY * data->sizeZ];
+	if (data->data == 0)
+		data->data = new short [data->sizeX * data->sizeY * data->sizeZ];
     for (size_t i = 0; i < data->sizeX * data->sizeY * data->sizeZ; i++)
         data->data[i] = 0;
 
@@ -62,6 +64,7 @@ void LayerSegmentsTree::CreateData(size_t* index, size_t count, ScanData* data)
                 data->data[voxel->index] = segmentsTree->scanData->data[voxel->index];
                 voxel = voxel->next;
             }
+			j++;
         }
         currentSegment = currentSegment->next;
     }    
@@ -74,6 +77,7 @@ SegmentsTree::SegmentsTree()
     root = 0;
     step = 50;
     countSegments = 0;
+	minVoxel = 0;
 }
 
 SegmentsTree::SegmentsTree(ScanData* data)
@@ -82,6 +86,7 @@ SegmentsTree::SegmentsTree(ScanData* data)
     root = 0;
     step = 50;
     countSegments = 0;
+	minVoxel = 0;
     CreateRoot(data);
 }
 
@@ -99,7 +104,8 @@ void SegmentsTree::CreateRoot(ScanData* data)
     root->segment = &segments[0];
     segments[0].voxel = &root->allVoxel[0];
     segments[0].indexSegment = 0;
-    segments[0].weightSegment = data->data[0];
+    segments[0].maxWeight = data->data[0];
+	segments[0].minWeight = data->data[0];
 
     for (size_t i = 1; i < data->sizeX*data->sizeY*data->sizeZ; i++)
     {
@@ -109,7 +115,8 @@ void SegmentsTree::CreateRoot(ScanData* data)
         root->allVoxel[i].segment = &segments[i];
         segments[i].voxel = &root->allVoxel[i];
         segments[i].indexSegment = i;
-        segments[i].weightSegment = data->data[i];
+        segments[i].maxWeight = data->data[i];
+		segments[i].minWeight = data->data[i];
 
     }
     countLayer++;     
@@ -203,7 +210,7 @@ void SegmentsTree::DeterminationAdjacents(LayerSegmentsTree* oldLayer, Segment* 
                             isNotVisit[indexiSegmentAdjacent] = false;
                             visitSegment[visitCount] = indexiSegmentAdjacent;
                             visitCount++;                            
-                            if (abs(w - segment->weightSegment) <= step)
+                            if (abs(w - segment->maxWeight) <= step)
                             {
                                 segmentAdjacents[countSegmentAdjacents] = segment;
                                 countSegmentAdjacents++;
@@ -253,6 +260,7 @@ LayerSegmentsTree* SegmentsTree::CreateNewLayer()
     Segment** segmentAdjacents;
 
     short maxWeight = 0;
+	short minWeight = 0;
     size_t countVoxel = 0;
     size_t maxCountVoxel = 0;
     size_t sumCountVoxel = 0;
@@ -261,7 +269,7 @@ LayerSegmentsTree* SegmentsTree::CreateNewLayer()
     segmentAdjacents = new Segment* [oldLayer->segmentCount];
     bool* isNotVisit = new bool [oldLayer->segmentCount + 2];
     size_t* visitSegment = new size_t [oldLayer->segmentCount];
-
+	
     for (size_t k = 0; k < oldLayer->segmentCount; k++)
     {
         segmentAdjacents[k] = 0;
@@ -270,11 +278,13 @@ LayerSegmentsTree* SegmentsTree::CreateNewLayer()
     }
 
     size_t countSegmentNotVisit = oldLayer->segmentCount -  countSegmentVisit;
-
+	short oldStep = step;
+	
     while (segment != 0)
-    {
+    {		
         if (isNotSegmentVisit[indexSegments])
         {            
+			step = oldStep;
             countVoxel = 0;
             //подготовка списка соседей
 
@@ -293,7 +303,7 @@ LayerSegmentsTree* SegmentsTree::CreateNewLayer()
             //определяем соседей
 
             DeterminationAdjacents(oldLayer, segment, segmentAdjacents, isNotSegmentVisit, 
-                countSegmentAdjacents, isNotVisit, visitSegment, segment->weightSegment);
+                countSegmentAdjacents, isNotVisit, visitSegment, segment->maxWeight);
 
             //создание нового сегмента
             if (newLayer->segment != 0)
@@ -317,11 +327,14 @@ LayerSegmentsTree* SegmentsTree::CreateNewLayer()
             oldVoxel = newLayer->oldSegment->voxel;
             Segment* segmentCurrent; 
             Voxel* currentVoxel = 0;
-            maxWeight = segment->weightSegment;
+            maxWeight = segment->maxWeight;
+			minWeight = segment->minWeight;
+
             for (size_t segmentAdjacent = 0; segmentAdjacent < countSegmentAdjacents; segmentAdjacent++)
             {
                 segmentCurrent = segmentAdjacents[segmentAdjacent];
-                maxWeight = max(segmentCurrent->weightSegment, maxWeight);
+                maxWeight = max(segmentCurrent->maxWeight, maxWeight);
+				minWeight = min(segmentCurrent->minWeight, minWeight);
 
                 currentVoxel = segmentCurrent->voxel;
                 oldVoxel->next = &newLayer->allVoxel[currentVoxel->index];
@@ -344,11 +357,82 @@ LayerSegmentsTree* SegmentsTree::CreateNewLayer()
 
                 segmentAdjacents[segmentAdjacent] = NULL;
             }
+			sumCountVoxel += countVoxel;
+			int t = 0;
+			while ((countVoxel < minVoxel) && ((scanData->sizeX * scanData->sizeY * scanData->sizeZ - sumCountVoxel) > minVoxel))
+			{
+				
+
+
+
+				if ((countSegmentNotVisit / 2) > oldLayer->segmentCount -  countSegmentVisit)
+				{
+					countSegmentNotVisit = oldLayer->segmentCount -  countSegmentVisit + 1;
+					delete [] segmentAdjacents;
+					delete [] visitSegment;
+					segmentAdjacents = new Segment* [countSegmentNotVisit];
+					visitSegment = new size_t [countSegmentNotVisit];
+				}
+
+				countSegmentAdjacents = 1;
+
+				segmentAdjacents[0] = segment;
+				//определяем соседей
+
+				DeterminationAdjacents(oldLayer, segment, segmentAdjacents, isNotSegmentVisit, 
+					countSegmentAdjacents, isNotVisit, visitSegment, segment->maxWeight);
+
+
+				currentVoxel = 0;
+
+				for (size_t segmentAdjacent = 1; ((segmentAdjacent < countSegmentAdjacents) && (countVoxel < minVoxel)); segmentAdjacent++)
+				{
+					segmentCurrent = segmentAdjacents[segmentAdjacent];
+					maxWeight = max(segmentCurrent->maxWeight, maxWeight);
+					minWeight = min(segmentCurrent->minWeight, minWeight);
+
+					currentVoxel = segmentCurrent->voxel;
+					oldVoxel->next = &newLayer->allVoxel[currentVoxel->index];
+
+					while(currentVoxel->next != 0)
+					{
+						newLayer->allVoxel[currentVoxel->index].index = currentVoxel->index;
+						newLayer->allVoxel[currentVoxel->index].segment = newLayer->oldSegment;
+						newLayer->allVoxel[currentVoxel->index].next = &newLayer->allVoxel[currentVoxel->next->index];
+						currentVoxel = currentVoxel->next;
+						countVoxel++;
+					}
+					newLayer->allVoxel[currentVoxel->index].index = currentVoxel->index;
+					newLayer->allVoxel[currentVoxel->index].segment = newLayer->oldSegment;
+					oldVoxel = &newLayer->allVoxel[currentVoxel->index];
+
+					isNotSegmentVisit[segmentCurrent->indexSegment] = false;
+					countVoxel++;
+					countSegmentVisit++;
+
+					segmentAdjacents[segmentAdjacent] = NULL;
+				}
+
+				for (size_t segmentAdjacent = 0; (segmentAdjacent < countSegmentAdjacents); segmentAdjacent++)
+					segmentAdjacents[segmentAdjacent] = NULL;
+
+				sumCountVoxel += countVoxel;
+				if (countSegmentAdjacents == 1)
+					step = step * 2;
+
+
+
+
+
+				t++;
+			}
+
             oldVoxel->next = NULL;
             maxCountVoxel = max(maxCountVoxel, countVoxel);
             newLayer->oldSegment->сapacity = countVoxel;
-            newLayer->oldSegment->weightSegment = maxWeight;
-            sumCountVoxel += countVoxel;
+            newLayer->oldSegment->maxWeight = maxWeight;
+			newLayer->oldSegment->minWeight = minWeight;
+            
             
 
         }

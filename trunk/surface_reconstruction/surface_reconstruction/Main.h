@@ -55,7 +55,7 @@ namespace surface_reconstruction {
 		{
 			data = sData;
 			segmentationForm->data = sData;
-			segmentationForm->d();
+			segmentationForm->EnabledSegmentation();
 		}
 
 

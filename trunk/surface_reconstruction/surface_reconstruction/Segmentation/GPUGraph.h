@@ -28,7 +28,8 @@ public:
 	Voxel2* indexVoxel;//индексы входящих в сегменты вокселей
 	size_t* startIndexVoxel;//индекс начала вокселей сегментов в indexVoxel
 	size_t* countVoxel;//количество вокселей в сегментах
-	short* weightSegment;//вес сегмента(максимальный перепад между точками)
+	short* maxWeight;//вес сегмента(максимальное значение плотности)
+	short* minWeight;
 
 	LayerSegmentsTree2();
 	void CreateData(size_t* index, size_t count, ScanData* data);
