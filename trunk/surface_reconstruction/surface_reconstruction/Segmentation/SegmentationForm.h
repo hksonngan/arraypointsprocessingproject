@@ -198,6 +198,8 @@ namespace surface_reconstruction {
 			this->MaxWeightSegment = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 			this->CheckSegment = (gcnew System::Windows::Forms::DataGridViewCheckBoxColumn());
 			this->SegmentationGroup = (gcnew System::Windows::Forms::GroupBox());
+			this->MinVoxel = (gcnew System::Windows::Forms::NumericUpDown());
+			this->MinVoxelLabel = (gcnew System::Windows::Forms::Label());
 			this->Display = (gcnew System::Windows::Forms::GroupBox());
 			this->NewDataDisplay = (gcnew System::Windows::Forms::RadioButton());
 			this->InitialDataDisplay = (gcnew System::Windows::Forms::RadioButton());
@@ -212,16 +214,14 @@ namespace surface_reconstruction {
 			this->CPU = (gcnew System::Windows::Forms::RadioButton());
 			this->SegmentationIteration = (gcnew System::Windows::Forms::Button());
 			this->StartSegmentation = (gcnew System::Windows::Forms::Button());
-			this->MinVoxelLabel = (gcnew System::Windows::Forms::Label());
-			this->MinVoxel = (gcnew System::Windows::Forms::NumericUpDown());
 			this->LayerSegmentsTreeInfo->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->LayerSegmentsGrid))->BeginInit();
 			this->SegmentInfo->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->CurrentSegment))->BeginInit();
 			this->SegmentationGroup->SuspendLayout();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->MinVoxel))->BeginInit();
 			this->Display->SuspendLayout();
 			this->SegmentationType0->SuspendLayout();
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->MinVoxel))->BeginInit();
 			this->SuspendLayout();
 			// 
 			// LayerSegmentsTreeInfo
@@ -409,6 +409,24 @@ namespace surface_reconstruction {
 			this->SegmentationGroup->TabStop = false;
 			this->SegmentationGroup->Text = L"Сегментация";
 			// 
+			// MinVoxel
+			// 
+			this->MinVoxel->Location = System::Drawing::Point(428, 74);
+			this->MinVoxel->Maximum = System::Decimal(gcnew cli::array< System::Int32 >(4) {1000000, 0, 0, 0});
+			this->MinVoxel->Name = L"MinVoxel";
+			this->MinVoxel->Size = System::Drawing::Size(120, 20);
+			this->MinVoxel->TabIndex = 13;
+			this->MinVoxel->Value = System::Decimal(gcnew cli::array< System::Int32 >(4) {10000, 0, 0, 0});
+			// 
+			// MinVoxelLabel
+			// 
+			this->MinVoxelLabel->AutoSize = true;
+			this->MinVoxelLabel->Location = System::Drawing::Point(173, 77);
+			this->MinVoxelLabel->Name = L"MinVoxelLabel";
+			this->MinVoxelLabel->Size = System::Drawing::Size(249, 13);
+			this->MinVoxelLabel->TabIndex = 12;
+			this->MinVoxelLabel->Text = L"минимальное количество вокселей в сегменте";
+			// 
 			// Display
 			// 
 			this->Display->Controls->Add(this->NewDataDisplay);
@@ -488,7 +506,7 @@ namespace surface_reconstruction {
 			this->StartStep->Name = L"StartStep";
 			this->StartStep->Size = System::Drawing::Size(100, 20);
 			this->StartStep->TabIndex = 6;
-			this->StartStep->Text = L"10";
+			this->StartStep->Text = L"35";
 			// 
 			// StartStepLabel
 			// 
@@ -556,22 +574,6 @@ namespace surface_reconstruction {
 			this->StartSegmentation->UseVisualStyleBackColor = true;
 			this->StartSegmentation->Click += gcnew System::EventHandler(this, &SegmentationForm::StartSegmentation_Click);
 			// 
-			// MinVoxelLabel
-			// 
-			this->MinVoxelLabel->AutoSize = true;
-			this->MinVoxelLabel->Location = System::Drawing::Point(173, 77);
-			this->MinVoxelLabel->Name = L"MinVoxelLabel";
-			this->MinVoxelLabel->Size = System::Drawing::Size(249, 13);
-			this->MinVoxelLabel->TabIndex = 12;
-			this->MinVoxelLabel->Text = L"минимальное количество вокселей в сегменте";
-			// 
-			// MinVoxel
-			// 
-			this->MinVoxel->Location = System::Drawing::Point(428, 74);
-			this->MinVoxel->Name = L"MinVoxel";
-			this->MinVoxel->Size = System::Drawing::Size(120, 20);
-			this->MinVoxel->TabIndex = 13;
-			// 
 			// SegmentationForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
@@ -592,11 +594,11 @@ namespace surface_reconstruction {
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->CurrentSegment))->EndInit();
 			this->SegmentationGroup->ResumeLayout(false);
 			this->SegmentationGroup->PerformLayout();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->MinVoxel))->EndInit();
 			this->Display->ResumeLayout(false);
 			this->Display->PerformLayout();
 			this->SegmentationType0->ResumeLayout(false);
 			this->SegmentationType0->PerformLayout();
-			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->MinVoxel))->EndInit();
 			this->ResumeLayout(false);
 
 		}

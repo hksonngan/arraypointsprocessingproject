@@ -75,6 +75,7 @@ public:
     size_t indexSegments;
     size_t countSegments;
 	size_t minVoxel;
+	short maxValue;
 
     //конструктор
     SegmentsTree();
@@ -86,8 +87,8 @@ public:
     LayerSegmentsTree* GetOldLayer();
     //определить соседние сегменты
     void DeterminationAdjacents(LayerSegmentsTree* oldLayer, Segment* segmentCurrent, Segment** segmentAdjacents, 
-        bool* isNotSegmentVisit, size_t& countSegmentAdjacents, bool* isNotVisit, size_t* visitSegment, short w);
+        bool* isNotSegmentVisit, size_t& countSegmentAdjacents, bool* isNotVisit, size_t* visitSegment, short w, size_t maxVoxelVisit);
     //создать новый слой
-    LayerSegmentsTree* CreateNewLayer();
+    LayerSegmentsTree* CreateNewLayer(bool isCombineMajorSegment = true);
 };
 
