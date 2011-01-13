@@ -2,7 +2,7 @@
 #include "stdafx.h"
 #include "GPUGraph.h"
 
-#include <CL/opencl.h>
+//#include <CL/opencl.h>
 #include <math.h>
 #include <stack>
 
@@ -11,7 +11,7 @@
 
 
 
-
+/*
 
 
 // Name of the file with the source code for the computation kernel
@@ -182,7 +182,7 @@ void O()
 	delete [] srcB;
 	delete []  dst;
 }
-
+*/
 
 
 
@@ -339,7 +339,7 @@ void SegmentsTree2::Kernel(size_t sx, size_t sy, size_t sz, short* weightSegment
 LayerSegmentsTree2* SegmentsTree2::CreateNewLayer()
 {
 	countLayer++;
-	main0();
+	//main0();
 	LayerSegmentsTree2* oldLayer = GetOldLayer();
 
 	size_t dim = scanData->sizeX * scanData->sizeY * scanData->sizeZ;
@@ -547,7 +547,7 @@ LayerSegmentsTree2* SegmentsTree2::CreateNewLayer()
 	if (count != dim)
 		int ggg = 0;
 
-	O();
+	//O();
 
 	delete [] countVoxel;
 	delete [] weightSegment;
