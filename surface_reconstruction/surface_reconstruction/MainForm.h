@@ -46,7 +46,7 @@ namespace surface_reconstruction {
         void ChangeData(ScanData* sData)
         {
             data = sData;
-			generateTextures();
+            generateTextures();
         }
 
     protected:
@@ -91,7 +91,7 @@ namespace surface_reconstruction {
 
     public:
         ScanData *data;
-		MyDel ^ StaticDelInst;
+        MyDel ^ StaticDelInst;
     private:
         /// <summary>
         /// Required designer variable.
@@ -102,7 +102,10 @@ namespace surface_reconstruction {
 
         GLint theBox;
         GLuint vertexVBOID, indexVBOID, colorVBOID;
-        GLuint *layerTextures;
+        GLuint *layerTextures, shaderTexture;
+
+        GLuint vertShader, fragShader, shaderProg;
+        GLfloat pCoord;
 
         float angleXRotation, angleYRotation;
         Point mousePosition;
@@ -162,6 +165,7 @@ private: System::Windows::Forms::TrackBar^  trackBarAlphaValue;
 private: System::Windows::Forms::CheckBox^  checkBoxAlphaTest;
 private: System::Windows::Forms::CheckBox^  checkBoxOneLayer;
 private: System::Windows::Forms::TrackBar^  trackBarBrightMult;
+private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeShader;
 
 
 
@@ -187,509 +191,522 @@ private: System::Windows::Forms::TrackBar^  trackBarBrightMult;
              /// </summary>
              void InitializeComponent(void)
              {
-				 this->components = (gcnew System::ComponentModel::Container());
-				 this->buttonOpenFile = (gcnew System::Windows::Forms::Button());
-				 this->labelStatus = (gcnew System::Windows::Forms::Label());
-				 this->GLWindow = (gcnew System::Windows::Forms::Panel());
-				 this->groupBoxRender = (gcnew System::Windows::Forms::GroupBox());
-				 this->timerDraw = (gcnew System::Windows::Forms::Timer(this->components));
-				 this->openDataDialog = (gcnew System::Windows::Forms::OpenFileDialog());
-				 this->groupBoxLoadData = (gcnew System::Windows::Forms::GroupBox());
-				 this->labelVoxelZ = (gcnew System::Windows::Forms::Label());
-				 this->labelVoxelY = (gcnew System::Windows::Forms::Label());
-				 this->labelVoxelX = (gcnew System::Windows::Forms::Label());
-				 this->labelLayerNum = (gcnew System::Windows::Forms::Label());
-				 this->labelLayerHeight = (gcnew System::Windows::Forms::Label());
-				 this->labelLayerWidth = (gcnew System::Windows::Forms::Label());
-				 this->labelDataFileName = (gcnew System::Windows::Forms::Label());
-				 this->buttonLoadData = (gcnew System::Windows::Forms::Button());
-				 this->textBoxInputFile = (gcnew System::Windows::Forms::TextBox());
-				 this->groupBoxRenderParams = (gcnew System::Windows::Forms::GroupBox());
-				 this->trackBarBrightMult = (gcnew System::Windows::Forms::TrackBar());
-				 this->checkBoxOneLayer = (gcnew System::Windows::Forms::CheckBox());
-				 this->labelAlphaValue = (gcnew System::Windows::Forms::Label());
-				 this->trackBarAlphaValue = (gcnew System::Windows::Forms::TrackBar());
-				 this->checkBoxAlphaTest = (gcnew System::Windows::Forms::CheckBox());
-				 this->textBoxAlphaTest = (gcnew System::Windows::Forms::TextBox());
-				 this->checkBoxDepthTest = (gcnew System::Windows::Forms::CheckBox());
-				 this->checkBoxTransperancy = (gcnew System::Windows::Forms::CheckBox());
-				 this->labelLayerDistance = (gcnew System::Windows::Forms::Label());
-				 this->trackBarLayerDistance = (gcnew System::Windows::Forms::TrackBar());
-				 this->trackBarLayerEnd = (gcnew System::Windows::Forms::TrackBar());
-				 this->textBoxLayerEnd = (gcnew System::Windows::Forms::TextBox());
-				 this->groupBoxRenderType = (gcnew System::Windows::Forms::GroupBox());
-				 this->radioButtonRenderTypeTexture3D = (gcnew System::Windows::Forms::RadioButton());
-				 this->radioButtonRenderTypeTexture = (gcnew System::Windows::Forms::RadioButton());
-				 this->radioButtonRenderTypeVBO = (gcnew System::Windows::Forms::RadioButton());
-				 this->radioButtonRenderTypeImmediate = (gcnew System::Windows::Forms::RadioButton());
-				 this->textBoxBrightnessMult = (gcnew System::Windows::Forms::TextBox());
-				 this->labelBrightnessMult = (gcnew System::Windows::Forms::Label());
-				 this->textBoxLayerStart = (gcnew System::Windows::Forms::TextBox());
-				 this->labelCurrentLayer = (gcnew System::Windows::Forms::Label());
-				 this->trackBarLayerStart = (gcnew System::Windows::Forms::TrackBar());
-				 this->groupBoxRender->SuspendLayout();
-				 this->groupBoxLoadData->SuspendLayout();
-				 this->groupBoxRenderParams->SuspendLayout();
-				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarBrightMult))->BeginInit();
-				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarAlphaValue))->BeginInit();
-				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerDistance))->BeginInit();
-				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerEnd))->BeginInit();
-				 this->groupBoxRenderType->SuspendLayout();
-				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerStart))->BeginInit();
-				 this->SuspendLayout();
-				 // 
-				 // buttonOpenFile
-				 // 
-				 this->buttonOpenFile->Location = System::Drawing::Point(6, 46);
-				 this->buttonOpenFile->Name = L"buttonOpenFile";
-				 this->buttonOpenFile->Size = System::Drawing::Size(104, 21);
-				 this->buttonOpenFile->TabIndex = 0;
-				 this->buttonOpenFile->Text = L"Открыть";
-				 this->buttonOpenFile->UseVisualStyleBackColor = true;
-				 this->buttonOpenFile->Click += gcnew System::EventHandler(this, &MainForm::button1_Click);
-				 // 
-				 // labelStatus
-				 // 
-				 this->labelStatus->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left));
-				 this->labelStatus->AutoSize = true;
-				 this->labelStatus->Location = System::Drawing::Point(3, 579);
-				 this->labelStatus->Name = L"labelStatus";
-				 this->labelStatus->Size = System::Drawing::Size(41, 13);
-				 this->labelStatus->TabIndex = 1;
-				 this->labelStatus->Text = L"Статус";
-				 // 
-				 // GLWindow
-				 // 
-				 this->GLWindow->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
-					 | System::Windows::Forms::AnchorStyles::Left) 
-					 | System::Windows::Forms::AnchorStyles::Right));
-				 this->GLWindow->Location = System::Drawing::Point(6, 19);
-				 this->GLWindow->Name = L"GLWindow";
-				 this->GLWindow->Size = System::Drawing::Size(499, 547);
-				 this->GLWindow->TabIndex = 2;
-				 this->GLWindow->MouseWheel += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseWheel);
-				 this->GLWindow->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseMove);
-				 this->GLWindow->Click += gcnew System::EventHandler(this, &MainForm::GLWindow_Click);
-				 this->GLWindow->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseDown);
-				 // 
-				 // groupBoxRender
-				 // 
-				 this->groupBoxRender->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
-					 | System::Windows::Forms::AnchorStyles::Left) 
-					 | System::Windows::Forms::AnchorStyles::Right));
-				 this->groupBoxRender->Controls->Add(this->GLWindow);
-				 this->groupBoxRender->Location = System::Drawing::Point(6, 4);
-				 this->groupBoxRender->Name = L"groupBoxRender";
-				 this->groupBoxRender->Size = System::Drawing::Size(511, 572);
-				 this->groupBoxRender->TabIndex = 3;
-				 this->groupBoxRender->TabStop = false;
-				 this->groupBoxRender->Text = L"Окно демонстрации";
-				 // 
-				 // timerDraw
-				 // 
-				 this->timerDraw->Enabled = true;
-				 this->timerDraw->Interval = 30;
-				 this->timerDraw->Tick += gcnew System::EventHandler(this, &MainForm::DrawTimer_Tick);
-				 // 
-				 // openDataDialog
-				 // 
-				 this->openDataDialog->FileName = L"*.bin";
-				 this->openDataDialog->Filter = L"Bin files(*.bin)|*.bin|All Files(*.*)|*.*";
-				 this->openDataDialog->Title = L"Open an Existing Document";
-				 // 
-				 // groupBoxLoadData
-				 // 
-				 this->groupBoxLoadData->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
-				 this->groupBoxLoadData->Controls->Add(this->labelVoxelZ);
-				 this->groupBoxLoadData->Controls->Add(this->labelVoxelY);
-				 this->groupBoxLoadData->Controls->Add(this->labelVoxelX);
-				 this->groupBoxLoadData->Controls->Add(this->labelLayerNum);
-				 this->groupBoxLoadData->Controls->Add(this->labelLayerHeight);
-				 this->groupBoxLoadData->Controls->Add(this->labelLayerWidth);
-				 this->groupBoxLoadData->Controls->Add(this->labelDataFileName);
-				 this->groupBoxLoadData->Controls->Add(this->buttonLoadData);
-				 this->groupBoxLoadData->Controls->Add(this->textBoxInputFile);
-				 this->groupBoxLoadData->Controls->Add(this->buttonOpenFile);
-				 this->groupBoxLoadData->Location = System::Drawing::Point(523, 4);
-				 this->groupBoxLoadData->Name = L"groupBoxLoadData";
-				 this->groupBoxLoadData->Size = System::Drawing::Size(217, 133);
-				 this->groupBoxLoadData->TabIndex = 5;
-				 this->groupBoxLoadData->TabStop = false;
-				 this->groupBoxLoadData->Text = L"Данные";
-				 // 
-				 // labelVoxelZ
-				 // 
-				 this->labelVoxelZ->AutoSize = true;
-				 this->labelVoxelZ->Location = System::Drawing::Point(111, 109);
-				 this->labelVoxelZ->Name = L"labelVoxelZ";
-				 this->labelVoxelZ->Size = System::Drawing::Size(74, 13);
-				 this->labelVoxelZ->TabIndex = 9;
-				 this->labelVoxelZ->Text = L"Размер по Z:";
-				 // 
-				 // labelVoxelY
-				 // 
-				 this->labelVoxelY->AutoSize = true;
-				 this->labelVoxelY->Location = System::Drawing::Point(111, 96);
-				 this->labelVoxelY->Name = L"labelVoxelY";
-				 this->labelVoxelY->Size = System::Drawing::Size(74, 13);
-				 this->labelVoxelY->TabIndex = 8;
-				 this->labelVoxelY->Text = L"Размер по Y:";
-				 // 
-				 // labelVoxelX
-				 // 
-				 this->labelVoxelX->AutoSize = true;
-				 this->labelVoxelX->Location = System::Drawing::Point(111, 83);
-				 this->labelVoxelX->Name = L"labelVoxelX";
-				 this->labelVoxelX->Size = System::Drawing::Size(74, 13);
-				 this->labelVoxelX->TabIndex = 7;
-				 this->labelVoxelX->Text = L"Размер по X:";
-				 // 
-				 // labelLayerNum
-				 // 
-				 this->labelLayerNum->AutoSize = true;
-				 this->labelLayerNum->Location = System::Drawing::Point(2, 109);
-				 this->labelLayerNum->Name = L"labelLayerNum";
-				 this->labelLayerNum->Size = System::Drawing::Size(77, 13);
-				 this->labelLayerNum->TabIndex = 6;
-				 this->labelLayerNum->Text = L"Кол-во слоев:";
-				 // 
-				 // labelLayerHeight
-				 // 
-				 this->labelLayerHeight->AutoSize = true;
-				 this->labelLayerHeight->Location = System::Drawing::Point(4, 96);
-				 this->labelLayerHeight->Name = L"labelLayerHeight";
-				 this->labelLayerHeight->Size = System::Drawing::Size(75, 13);
-				 this->labelLayerHeight->TabIndex = 5;
-				 this->labelLayerHeight->Text = L"Высота слоя:";
-				 // 
-				 // labelLayerWidth
-				 // 
-				 this->labelLayerWidth->AutoSize = true;
-				 this->labelLayerWidth->Location = System::Drawing::Point(3, 83);
-				 this->labelLayerWidth->Name = L"labelLayerWidth";
-				 this->labelLayerWidth->Size = System::Drawing::Size(76, 13);
-				 this->labelLayerWidth->TabIndex = 4;
-				 this->labelLayerWidth->Text = L"Ширина слоя:";
-				 // 
-				 // labelDataFileName
-				 // 
-				 this->labelDataFileName->AutoSize = true;
-				 this->labelDataFileName->Location = System::Drawing::Point(2, 70);
-				 this->labelDataFileName->Name = L"labelDataFileName";
-				 this->labelDataFileName->Size = System::Drawing::Size(39, 13);
-				 this->labelDataFileName->TabIndex = 3;
-				 this->labelDataFileName->Text = L"Файл:";
-				 // 
-				 // buttonLoadData
-				 // 
-				 this->buttonLoadData->Location = System::Drawing::Point(116, 46);
-				 this->buttonLoadData->Name = L"buttonLoadData";
-				 this->buttonLoadData->Size = System::Drawing::Size(94, 22);
-				 this->buttonLoadData->TabIndex = 2;
-				 this->buttonLoadData->Text = L"Загрузить";
-				 this->buttonLoadData->UseVisualStyleBackColor = true;
-				 this->buttonLoadData->Click += gcnew System::EventHandler(this, &MainForm::buttonLoadData_Click);
-				 // 
-				 // textBoxInputFile
-				 // 
-				 this->textBoxInputFile->Location = System::Drawing::Point(6, 20);
-				 this->textBoxInputFile->Name = L"textBoxInputFile";
-				 this->textBoxInputFile->Size = System::Drawing::Size(204, 20);
-				 this->textBoxInputFile->TabIndex = 1;
-				 // 
-				 // groupBoxRenderParams
-				 // 
-				 this->groupBoxRenderParams->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
-					 | System::Windows::Forms::AnchorStyles::Right));
-				 this->groupBoxRenderParams->Controls->Add(this->trackBarBrightMult);
-				 this->groupBoxRenderParams->Controls->Add(this->checkBoxOneLayer);
-				 this->groupBoxRenderParams->Controls->Add(this->labelAlphaValue);
-				 this->groupBoxRenderParams->Controls->Add(this->trackBarAlphaValue);
-				 this->groupBoxRenderParams->Controls->Add(this->checkBoxAlphaTest);
-				 this->groupBoxRenderParams->Controls->Add(this->textBoxAlphaTest);
-				 this->groupBoxRenderParams->Controls->Add(this->checkBoxDepthTest);
-				 this->groupBoxRenderParams->Controls->Add(this->checkBoxTransperancy);
-				 this->groupBoxRenderParams->Controls->Add(this->labelLayerDistance);
-				 this->groupBoxRenderParams->Controls->Add(this->trackBarLayerDistance);
-				 this->groupBoxRenderParams->Controls->Add(this->trackBarLayerEnd);
-				 this->groupBoxRenderParams->Controls->Add(this->textBoxLayerEnd);
-				 this->groupBoxRenderParams->Controls->Add(this->groupBoxRenderType);
-				 this->groupBoxRenderParams->Controls->Add(this->textBoxBrightnessMult);
-				 this->groupBoxRenderParams->Controls->Add(this->labelBrightnessMult);
-				 this->groupBoxRenderParams->Controls->Add(this->textBoxLayerStart);
-				 this->groupBoxRenderParams->Controls->Add(this->labelCurrentLayer);
-				 this->groupBoxRenderParams->Controls->Add(this->trackBarLayerStart);
-				 this->groupBoxRenderParams->Location = System::Drawing::Point(523, 143);
-				 this->groupBoxRenderParams->Name = L"groupBoxRenderParams";
-				 this->groupBoxRenderParams->Size = System::Drawing::Size(216, 433);
-				 this->groupBoxRenderParams->TabIndex = 6;
-				 this->groupBoxRenderParams->TabStop = false;
-				 this->groupBoxRenderParams->Text = L"Параметры визуализации";
-				 // 
-				 // trackBarBrightMult
-				 // 
-				 this->trackBarBrightMult->Location = System::Drawing::Point(5, 351);
-				 this->trackBarBrightMult->Maximum = 50;
-				 this->trackBarBrightMult->Minimum = 1;
-				 this->trackBarBrightMult->Name = L"trackBarBrightMult";
-				 this->trackBarBrightMult->Size = System::Drawing::Size(146, 45);
-				 this->trackBarBrightMult->TabIndex = 18;
-				 this->trackBarBrightMult->Value = 1;
-				 this->trackBarBrightMult->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarBrightMult_ValueChanged);
-				 // 
-				 // checkBoxOneLayer
-				 // 
-				 this->checkBoxOneLayer->AutoSize = true;
-				 this->checkBoxOneLayer->Location = System::Drawing::Point(43, 134);
-				 this->checkBoxOneLayer->Name = L"checkBoxOneLayer";
-				 this->checkBoxOneLayer->Size = System::Drawing::Size(90, 17);
-				 this->checkBoxOneLayer->TabIndex = 17;
-				 this->checkBoxOneLayer->Text = L"Только один";
-				 this->checkBoxOneLayer->UseVisualStyleBackColor = true;
-				 this->checkBoxOneLayer->CheckedChanged += gcnew System::EventHandler(this, &MainForm::checkBoxOneLayer_CheckedChanged);
-				 // 
-				 // labelAlphaValue
-				 // 
-				 this->labelAlphaValue->AutoSize = true;
-				 this->labelAlphaValue->Location = System::Drawing::Point(6, 273);
-				 this->labelAlphaValue->Name = L"labelAlphaValue";
-				 this->labelAlphaValue->Size = System::Drawing::Size(94, 13);
-				 this->labelAlphaValue->TabIndex = 16;
-				 this->labelAlphaValue->Text = L"Пороговое знач.:";
-				 // 
-				 // trackBarAlphaValue
-				 // 
-				 this->trackBarAlphaValue->Location = System::Drawing::Point(9, 289);
-				 this->trackBarAlphaValue->Maximum = 1000;
-				 this->trackBarAlphaValue->Name = L"trackBarAlphaValue";
-				 this->trackBarAlphaValue->Size = System::Drawing::Size(142, 45);
-				 this->trackBarAlphaValue->TabIndex = 15;
-				 this->trackBarAlphaValue->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarAlphaValue_ValueChanged);
-				 // 
-				 // checkBoxAlphaTest
-				 // 
-				 this->checkBoxAlphaTest->AutoSize = true;
-				 this->checkBoxAlphaTest->Checked = true;
-				 this->checkBoxAlphaTest->CheckState = System::Windows::Forms::CheckState::Checked;
-				 this->checkBoxAlphaTest->Location = System::Drawing::Point(103, 272);
-				 this->checkBoxAlphaTest->Name = L"checkBoxAlphaTest";
-				 this->checkBoxAlphaTest->Size = System::Drawing::Size(95, 17);
-				 this->checkBoxAlphaTest->TabIndex = 14;
-				 this->checkBoxAlphaTest->Text = L"ALPHA_TEST";
-				 this->checkBoxAlphaTest->UseVisualStyleBackColor = true;
-				 this->checkBoxAlphaTest->CheckedChanged += gcnew System::EventHandler(this, &MainForm::checkBoxAlphaTest_CheckedChanged);
-				 this->checkBoxAlphaTest->EnabledChanged += gcnew System::EventHandler(this, &MainForm::checkBoxAlphaTest_EnabledChanged);
-				 // 
-				 // textBoxAlphaTest
-				 // 
-				 this->textBoxAlphaTest->Location = System::Drawing::Point(157, 289);
-				 this->textBoxAlphaTest->Name = L"textBoxAlphaTest";
-				 this->textBoxAlphaTest->Size = System::Drawing::Size(43, 20);
-				 this->textBoxAlphaTest->TabIndex = 13;
-				 this->textBoxAlphaTest->Text = L"0,0";
-				 this->textBoxAlphaTest->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
-				 this->textBoxAlphaTest->TextChanged += gcnew System::EventHandler(this, &MainForm::textBox1_TextChanged);
-				 // 
-				 // checkBoxDepthTest
-				 // 
-				 this->checkBoxDepthTest->AutoSize = true;
-				 this->checkBoxDepthTest->Checked = true;
-				 this->checkBoxDepthTest->CheckState = System::Windows::Forms::CheckState::Checked;
-				 this->checkBoxDepthTest->Enabled = false;
-				 this->checkBoxDepthTest->Location = System::Drawing::Point(103, 254);
-				 this->checkBoxDepthTest->Name = L"checkBoxDepthTest";
-				 this->checkBoxDepthTest->Size = System::Drawing::Size(97, 17);
-				 this->checkBoxDepthTest->TabIndex = 12;
-				 this->checkBoxDepthTest->Text = L"DEPTH_TEST";
-				 this->checkBoxDepthTest->UseVisualStyleBackColor = true;
-				 // 
-				 // checkBoxTransperancy
-				 // 
-				 this->checkBoxTransperancy->AutoSize = true;
-				 this->checkBoxTransperancy->Location = System::Drawing::Point(13, 254);
-				 this->checkBoxTransperancy->Name = L"checkBoxTransperancy";
-				 this->checkBoxTransperancy->Size = System::Drawing::Size(91, 17);
-				 this->checkBoxTransperancy->TabIndex = 11;
-				 this->checkBoxTransperancy->Text = L"Transperancy";
-				 this->checkBoxTransperancy->UseVisualStyleBackColor = true;
-				 this->checkBoxTransperancy->CheckedChanged += gcnew System::EventHandler(this, &MainForm::checkBoxTransperancy_CheckedChanged);
-				 // 
-				 // labelLayerDistance
-				 // 
-				 this->labelLayerDistance->AutoSize = true;
-				 this->labelLayerDistance->Location = System::Drawing::Point(10, 210);
-				 this->labelLayerDistance->Name = L"labelLayerDistance";
-				 this->labelLayerDistance->Size = System::Drawing::Size(147, 13);
-				 this->labelLayerDistance->TabIndex = 10;
-				 this->labelLayerDistance->Text = L"Расстояние между слоями:";
-				 // 
-				 // trackBarLayerDistance
-				 // 
-				 this->trackBarLayerDistance->Location = System::Drawing::Point(9, 226);
-				 this->trackBarLayerDistance->Maximum = 150;
-				 this->trackBarLayerDistance->Minimum = 1;
-				 this->trackBarLayerDistance->Name = L"trackBarLayerDistance";
-				 this->trackBarLayerDistance->Size = System::Drawing::Size(200, 45);
-				 this->trackBarLayerDistance->TabIndex = 9;
-				 this->trackBarLayerDistance->Value = 35;
-				 // 
-				 // trackBarLayerEnd
-				 // 
-				 this->trackBarLayerEnd->Location = System::Drawing::Point(6, 178);
-				 this->trackBarLayerEnd->Maximum = 0;
-				 this->trackBarLayerEnd->Name = L"trackBarLayerEnd";
-				 this->trackBarLayerEnd->Size = System::Drawing::Size(204, 45);
-				 this->trackBarLayerEnd->TabIndex = 8;
-				 this->trackBarLayerEnd->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarLayerEnd_ValueChanged);
-				 // 
-				 // textBoxLayerEnd
-				 // 
-				 this->textBoxLayerEnd->Location = System::Drawing::Point(171, 132);
-				 this->textBoxLayerEnd->Name = L"textBoxLayerEnd";
-				 this->textBoxLayerEnd->Size = System::Drawing::Size(29, 20);
-				 this->textBoxLayerEnd->TabIndex = 7;
-				 this->textBoxLayerEnd->Text = L"0";
-				 this->textBoxLayerEnd->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
-				 this->textBoxLayerEnd->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxLayerEnd_TextChanged);
-				 // 
-				 // groupBoxRenderType
-				 // 
-				 this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeTexture3D);
-				 this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeTexture);
-				 this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeVBO);
-				 this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeImmediate);
-				 this->groupBoxRenderType->Location = System::Drawing::Point(6, 19);
-				 this->groupBoxRenderType->Name = L"groupBoxRenderType";
-				 this->groupBoxRenderType->Size = System::Drawing::Size(204, 111);
-				 this->groupBoxRenderType->TabIndex = 6;
-				 this->groupBoxRenderType->TabStop = false;
-				 this->groupBoxRenderType->Text = L"Метод визуализации";
-				 // 
-				 // radioButtonRenderTypeTexture3D
-				 // 
-				 this->radioButtonRenderTypeTexture3D->AutoSize = true;
-				 this->radioButtonRenderTypeTexture3D->Location = System::Drawing::Point(7, 88);
-				 this->radioButtonRenderTypeTexture3D->Name = L"radioButtonRenderTypeTexture3D";
-				 this->radioButtonRenderTypeTexture3D->Size = System::Drawing::Size(162, 17);
-				 this->radioButtonRenderTypeTexture3D->TabIndex = 3;
-				 this->radioButtonRenderTypeTexture3D->Text = L"Использовать 3D текстуру";
-				 this->radioButtonRenderTypeTexture3D->UseVisualStyleBackColor = true;
-				 this->radioButtonRenderTypeTexture3D->CheckedChanged += gcnew System::EventHandler(this, &MainForm::radioButtonRenderTypeTexture3D_CheckedChanged);
-				 // 
-				 // radioButtonRenderTypeTexture
-				 // 
-				 this->radioButtonRenderTypeTexture->AutoSize = true;
-				 this->radioButtonRenderTypeTexture->Checked = true;
-				 this->radioButtonRenderTypeTexture->Location = System::Drawing::Point(7, 65);
-				 this->radioButtonRenderTypeTexture->Name = L"radioButtonRenderTypeTexture";
-				 this->radioButtonRenderTypeTexture->Size = System::Drawing::Size(165, 17);
-				 this->radioButtonRenderTypeTexture->TabIndex = 2;
-				 this->radioButtonRenderTypeTexture->TabStop = true;
-				 this->radioButtonRenderTypeTexture->Text = L"Использовать 2D текстуры";
-				 this->radioButtonRenderTypeTexture->UseVisualStyleBackColor = true;
-				 this->radioButtonRenderTypeTexture->CheckedChanged += gcnew System::EventHandler(this, &MainForm::radioButtonRenderTypeTexture_CheckedChanged);
-				 // 
-				 // radioButtonRenderTypeVBO
-				 // 
-				 this->radioButtonRenderTypeVBO->AutoSize = true;
-				 this->radioButtonRenderTypeVBO->Location = System::Drawing::Point(7, 42);
-				 this->radioButtonRenderTypeVBO->Name = L"radioButtonRenderTypeVBO";
-				 this->radioButtonRenderTypeVBO->Size = System::Drawing::Size(120, 17);
-				 this->radioButtonRenderTypeVBO->TabIndex = 1;
-				 this->radioButtonRenderTypeVBO->Text = L"Vertex Buffer Object";
-				 this->radioButtonRenderTypeVBO->UseVisualStyleBackColor = true;
-				 this->radioButtonRenderTypeVBO->CheckedChanged += gcnew System::EventHandler(this, &MainForm::radioButtonRenderTypeVBO_CheckedChanged);
-				 // 
-				 // radioButtonRenderTypeImmediate
-				 // 
-				 this->radioButtonRenderTypeImmediate->AutoSize = true;
-				 this->radioButtonRenderTypeImmediate->Location = System::Drawing::Point(7, 19);
-				 this->radioButtonRenderTypeImmediate->Name = L"radioButtonRenderTypeImmediate";
-				 this->radioButtonRenderTypeImmediate->Size = System::Drawing::Size(73, 17);
-				 this->radioButtonRenderTypeImmediate->TabIndex = 0;
-				 this->radioButtonRenderTypeImmediate->Text = L"Immediate";
-				 this->radioButtonRenderTypeImmediate->UseVisualStyleBackColor = true;
-				 // 
-				 // textBoxBrightnessMult
-				 // 
-				 this->textBoxBrightnessMult->Location = System::Drawing::Point(157, 351);
-				 this->textBoxBrightnessMult->Name = L"textBoxBrightnessMult";
-				 this->textBoxBrightnessMult->Size = System::Drawing::Size(41, 20);
-				 this->textBoxBrightnessMult->TabIndex = 4;
-				 this->textBoxBrightnessMult->Text = L"30,0";
-				 this->textBoxBrightnessMult->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
-				 this->textBoxBrightnessMult->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxBrightnessMult_TextChanged);
-				 // 
-				 // labelBrightnessMult
-				 // 
-				 this->labelBrightnessMult->AutoSize = true;
-				 this->labelBrightnessMult->Location = System::Drawing::Point(6, 333);
-				 this->labelBrightnessMult->Name = L"labelBrightnessMult";
-				 this->labelBrightnessMult->Size = System::Drawing::Size(112, 13);
-				 this->labelBrightnessMult->TabIndex = 3;
-				 this->labelBrightnessMult->Text = L"Множитель яркости:";
-				 // 
-				 // textBoxLayerStart
-				 // 
-				 this->textBoxLayerStart->Location = System::Drawing::Point(133, 132);
-				 this->textBoxLayerStart->Name = L"textBoxLayerStart";
-				 this->textBoxLayerStart->Size = System::Drawing::Size(32, 20);
-				 this->textBoxLayerStart->TabIndex = 2;
-				 this->textBoxLayerStart->Text = L"0";
-				 this->textBoxLayerStart->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
-				 this->textBoxLayerStart->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxCurrentLayer_TextChanged);
-				 // 
-				 // labelCurrentLayer
-				 // 
-				 this->labelCurrentLayer->AutoSize = true;
-				 this->labelCurrentLayer->Location = System::Drawing::Point(6, 135);
-				 this->labelCurrentLayer->Name = L"labelCurrentLayer";
-				 this->labelCurrentLayer->Size = System::Drawing::Size(35, 13);
-				 this->labelCurrentLayer->TabIndex = 1;
-				 this->labelCurrentLayer->Text = L"Слои:";
-				 // 
-				 // trackBarLayerStart
-				 // 
-				 this->trackBarLayerStart->Location = System::Drawing::Point(6, 149);
-				 this->trackBarLayerStart->Maximum = 0;
-				 this->trackBarLayerStart->Name = L"trackBarLayerStart";
-				 this->trackBarLayerStart->Size = System::Drawing::Size(204, 45);
-				 this->trackBarLayerStart->TabIndex = 0;
-				 this->trackBarLayerStart->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarLayer_ValueChanged);
-				 // 
-				 // MainForm
-				 // 
-				 this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
-				 this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-				 this->ClientSize = System::Drawing::Size(744, 594);
-				 this->Controls->Add(this->groupBoxRenderParams);
-				 this->Controls->Add(this->groupBoxLoadData);
-				 this->Controls->Add(this->groupBoxRender);
-				 this->Controls->Add(this->labelStatus);
-				 this->DoubleBuffered = true;
-				 this->MinimumSize = System::Drawing::Size(640, 480);
-				 this->Name = L"MainForm";
-				 this->Text = L"Аццкая рисовалка";
-				 this->WindowState = System::Windows::Forms::FormWindowState::Maximized;
-				 this->Load += gcnew System::EventHandler(this, &MainForm::MainForm_Load);
-				 this->FormClosing += gcnew System::Windows::Forms::FormClosingEventHandler(this, &MainForm::MainForm_FormClosing);
-				 this->Resize += gcnew System::EventHandler(this, &MainForm::MainForm_Resize);
-				 this->groupBoxRender->ResumeLayout(false);
-				 this->groupBoxLoadData->ResumeLayout(false);
-				 this->groupBoxLoadData->PerformLayout();
-				 this->groupBoxRenderParams->ResumeLayout(false);
-				 this->groupBoxRenderParams->PerformLayout();
-				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarBrightMult))->EndInit();
-				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarAlphaValue))->EndInit();
-				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerDistance))->EndInit();
-				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerEnd))->EndInit();
-				 this->groupBoxRenderType->ResumeLayout(false);
-				 this->groupBoxRenderType->PerformLayout();
-				 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerStart))->EndInit();
-				 this->ResumeLayout(false);
-				 this->PerformLayout();
+                 this->components = (gcnew System::ComponentModel::Container());
+                 this->buttonOpenFile = (gcnew System::Windows::Forms::Button());
+                 this->labelStatus = (gcnew System::Windows::Forms::Label());
+                 this->GLWindow = (gcnew System::Windows::Forms::Panel());
+                 this->groupBoxRender = (gcnew System::Windows::Forms::GroupBox());
+                 this->timerDraw = (gcnew System::Windows::Forms::Timer(this->components));
+                 this->openDataDialog = (gcnew System::Windows::Forms::OpenFileDialog());
+                 this->groupBoxLoadData = (gcnew System::Windows::Forms::GroupBox());
+                 this->labelVoxelZ = (gcnew System::Windows::Forms::Label());
+                 this->labelVoxelY = (gcnew System::Windows::Forms::Label());
+                 this->labelVoxelX = (gcnew System::Windows::Forms::Label());
+                 this->labelLayerNum = (gcnew System::Windows::Forms::Label());
+                 this->labelLayerHeight = (gcnew System::Windows::Forms::Label());
+                 this->labelLayerWidth = (gcnew System::Windows::Forms::Label());
+                 this->labelDataFileName = (gcnew System::Windows::Forms::Label());
+                 this->buttonLoadData = (gcnew System::Windows::Forms::Button());
+                 this->textBoxInputFile = (gcnew System::Windows::Forms::TextBox());
+                 this->groupBoxRenderParams = (gcnew System::Windows::Forms::GroupBox());
+                 this->trackBarBrightMult = (gcnew System::Windows::Forms::TrackBar());
+                 this->checkBoxOneLayer = (gcnew System::Windows::Forms::CheckBox());
+                 this->labelAlphaValue = (gcnew System::Windows::Forms::Label());
+                 this->trackBarAlphaValue = (gcnew System::Windows::Forms::TrackBar());
+                 this->checkBoxAlphaTest = (gcnew System::Windows::Forms::CheckBox());
+                 this->textBoxAlphaTest = (gcnew System::Windows::Forms::TextBox());
+                 this->checkBoxDepthTest = (gcnew System::Windows::Forms::CheckBox());
+                 this->checkBoxTransperancy = (gcnew System::Windows::Forms::CheckBox());
+                 this->labelLayerDistance = (gcnew System::Windows::Forms::Label());
+                 this->trackBarLayerDistance = (gcnew System::Windows::Forms::TrackBar());
+                 this->trackBarLayerEnd = (gcnew System::Windows::Forms::TrackBar());
+                 this->textBoxLayerEnd = (gcnew System::Windows::Forms::TextBox());
+                 this->groupBoxRenderType = (gcnew System::Windows::Forms::GroupBox());
+                 this->radioButtonRenderTypeTexture3D = (gcnew System::Windows::Forms::RadioButton());
+                 this->radioButtonRenderTypeTexture = (gcnew System::Windows::Forms::RadioButton());
+                 this->radioButtonRenderTypeVBO = (gcnew System::Windows::Forms::RadioButton());
+                 this->radioButtonRenderTypeImmediate = (gcnew System::Windows::Forms::RadioButton());
+                 this->textBoxBrightnessMult = (gcnew System::Windows::Forms::TextBox());
+                 this->labelBrightnessMult = (gcnew System::Windows::Forms::Label());
+                 this->textBoxLayerStart = (gcnew System::Windows::Forms::TextBox());
+                 this->labelCurrentLayer = (gcnew System::Windows::Forms::Label());
+                 this->trackBarLayerStart = (gcnew System::Windows::Forms::TrackBar());
+                 this->radioButtonRenderTypeShader = (gcnew System::Windows::Forms::RadioButton());
+                 this->groupBoxRender->SuspendLayout();
+                 this->groupBoxLoadData->SuspendLayout();
+                 this->groupBoxRenderParams->SuspendLayout();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarBrightMult))->BeginInit();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarAlphaValue))->BeginInit();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerDistance))->BeginInit();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerEnd))->BeginInit();
+                 this->groupBoxRenderType->SuspendLayout();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerStart))->BeginInit();
+                 this->SuspendLayout();
+                 // 
+                 // buttonOpenFile
+                 // 
+                 this->buttonOpenFile->Location = System::Drawing::Point(6, 46);
+                 this->buttonOpenFile->Name = L"buttonOpenFile";
+                 this->buttonOpenFile->Size = System::Drawing::Size(104, 21);
+                 this->buttonOpenFile->TabIndex = 0;
+                 this->buttonOpenFile->Text = L"Открыть";
+                 this->buttonOpenFile->UseVisualStyleBackColor = true;
+                 this->buttonOpenFile->Click += gcnew System::EventHandler(this, &MainForm::button1_Click);
+                 // 
+                 // labelStatus
+                 // 
+                 this->labelStatus->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left));
+                 this->labelStatus->AutoSize = true;
+                 this->labelStatus->Location = System::Drawing::Point(3, 579);
+                 this->labelStatus->Name = L"labelStatus";
+                 this->labelStatus->Size = System::Drawing::Size(41, 13);
+                 this->labelStatus->TabIndex = 1;
+                 this->labelStatus->Text = L"Статус";
+                 // 
+                 // GLWindow
+                 // 
+                 this->GLWindow->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
+                     | System::Windows::Forms::AnchorStyles::Left) 
+                     | System::Windows::Forms::AnchorStyles::Right));
+                 this->GLWindow->Location = System::Drawing::Point(6, 19);
+                 this->GLWindow->Name = L"GLWindow";
+                 this->GLWindow->Size = System::Drawing::Size(499, 547);
+                 this->GLWindow->TabIndex = 2;
+                 this->GLWindow->MouseWheel += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseWheel);
+                 this->GLWindow->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseMove);
+                 this->GLWindow->Click += gcnew System::EventHandler(this, &MainForm::GLWindow_Click);
+                 this->GLWindow->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &MainForm::GLWindow_MouseDown);
+                 // 
+                 // groupBoxRender
+                 // 
+                 this->groupBoxRender->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
+                     | System::Windows::Forms::AnchorStyles::Left) 
+                     | System::Windows::Forms::AnchorStyles::Right));
+                 this->groupBoxRender->Controls->Add(this->GLWindow);
+                 this->groupBoxRender->Location = System::Drawing::Point(6, 4);
+                 this->groupBoxRender->Name = L"groupBoxRender";
+                 this->groupBoxRender->Size = System::Drawing::Size(511, 572);
+                 this->groupBoxRender->TabIndex = 3;
+                 this->groupBoxRender->TabStop = false;
+                 this->groupBoxRender->Text = L"Окно демонстрации";
+                 // 
+                 // timerDraw
+                 // 
+                 this->timerDraw->Enabled = true;
+                 this->timerDraw->Interval = 30;
+                 this->timerDraw->Tick += gcnew System::EventHandler(this, &MainForm::DrawTimer_Tick);
+                 // 
+                 // openDataDialog
+                 // 
+                 this->openDataDialog->FileName = L"*.bin";
+                 this->openDataDialog->Filter = L"Bin files(*.bin)|*.bin|All Files(*.*)|*.*";
+                 this->openDataDialog->Title = L"Open an Existing Document";
+                 // 
+                 // groupBoxLoadData
+                 // 
+                 this->groupBoxLoadData->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
+                 this->groupBoxLoadData->Controls->Add(this->labelVoxelZ);
+                 this->groupBoxLoadData->Controls->Add(this->labelVoxelY);
+                 this->groupBoxLoadData->Controls->Add(this->labelVoxelX);
+                 this->groupBoxLoadData->Controls->Add(this->labelLayerNum);
+                 this->groupBoxLoadData->Controls->Add(this->labelLayerHeight);
+                 this->groupBoxLoadData->Controls->Add(this->labelLayerWidth);
+                 this->groupBoxLoadData->Controls->Add(this->labelDataFileName);
+                 this->groupBoxLoadData->Controls->Add(this->buttonLoadData);
+                 this->groupBoxLoadData->Controls->Add(this->textBoxInputFile);
+                 this->groupBoxLoadData->Controls->Add(this->buttonOpenFile);
+                 this->groupBoxLoadData->Location = System::Drawing::Point(523, 4);
+                 this->groupBoxLoadData->Name = L"groupBoxLoadData";
+                 this->groupBoxLoadData->Size = System::Drawing::Size(217, 133);
+                 this->groupBoxLoadData->TabIndex = 5;
+                 this->groupBoxLoadData->TabStop = false;
+                 this->groupBoxLoadData->Text = L"Данные";
+                 // 
+                 // labelVoxelZ
+                 // 
+                 this->labelVoxelZ->AutoSize = true;
+                 this->labelVoxelZ->Location = System::Drawing::Point(111, 109);
+                 this->labelVoxelZ->Name = L"labelVoxelZ";
+                 this->labelVoxelZ->Size = System::Drawing::Size(74, 13);
+                 this->labelVoxelZ->TabIndex = 9;
+                 this->labelVoxelZ->Text = L"Размер по Z:";
+                 // 
+                 // labelVoxelY
+                 // 
+                 this->labelVoxelY->AutoSize = true;
+                 this->labelVoxelY->Location = System::Drawing::Point(111, 96);
+                 this->labelVoxelY->Name = L"labelVoxelY";
+                 this->labelVoxelY->Size = System::Drawing::Size(74, 13);
+                 this->labelVoxelY->TabIndex = 8;
+                 this->labelVoxelY->Text = L"Размер по Y:";
+                 // 
+                 // labelVoxelX
+                 // 
+                 this->labelVoxelX->AutoSize = true;
+                 this->labelVoxelX->Location = System::Drawing::Point(111, 83);
+                 this->labelVoxelX->Name = L"labelVoxelX";
+                 this->labelVoxelX->Size = System::Drawing::Size(74, 13);
+                 this->labelVoxelX->TabIndex = 7;
+                 this->labelVoxelX->Text = L"Размер по X:";
+                 // 
+                 // labelLayerNum
+                 // 
+                 this->labelLayerNum->AutoSize = true;
+                 this->labelLayerNum->Location = System::Drawing::Point(2, 109);
+                 this->labelLayerNum->Name = L"labelLayerNum";
+                 this->labelLayerNum->Size = System::Drawing::Size(77, 13);
+                 this->labelLayerNum->TabIndex = 6;
+                 this->labelLayerNum->Text = L"Кол-во слоев:";
+                 // 
+                 // labelLayerHeight
+                 // 
+                 this->labelLayerHeight->AutoSize = true;
+                 this->labelLayerHeight->Location = System::Drawing::Point(4, 96);
+                 this->labelLayerHeight->Name = L"labelLayerHeight";
+                 this->labelLayerHeight->Size = System::Drawing::Size(75, 13);
+                 this->labelLayerHeight->TabIndex = 5;
+                 this->labelLayerHeight->Text = L"Высота слоя:";
+                 // 
+                 // labelLayerWidth
+                 // 
+                 this->labelLayerWidth->AutoSize = true;
+                 this->labelLayerWidth->Location = System::Drawing::Point(3, 83);
+                 this->labelLayerWidth->Name = L"labelLayerWidth";
+                 this->labelLayerWidth->Size = System::Drawing::Size(76, 13);
+                 this->labelLayerWidth->TabIndex = 4;
+                 this->labelLayerWidth->Text = L"Ширина слоя:";
+                 // 
+                 // labelDataFileName
+                 // 
+                 this->labelDataFileName->AutoSize = true;
+                 this->labelDataFileName->Location = System::Drawing::Point(2, 70);
+                 this->labelDataFileName->Name = L"labelDataFileName";
+                 this->labelDataFileName->Size = System::Drawing::Size(39, 13);
+                 this->labelDataFileName->TabIndex = 3;
+                 this->labelDataFileName->Text = L"Файл:";
+                 // 
+                 // buttonLoadData
+                 // 
+                 this->buttonLoadData->Location = System::Drawing::Point(116, 46);
+                 this->buttonLoadData->Name = L"buttonLoadData";
+                 this->buttonLoadData->Size = System::Drawing::Size(94, 22);
+                 this->buttonLoadData->TabIndex = 2;
+                 this->buttonLoadData->Text = L"Загрузить";
+                 this->buttonLoadData->UseVisualStyleBackColor = true;
+                 this->buttonLoadData->Click += gcnew System::EventHandler(this, &MainForm::buttonLoadData_Click);
+                 // 
+                 // textBoxInputFile
+                 // 
+                 this->textBoxInputFile->Location = System::Drawing::Point(6, 20);
+                 this->textBoxInputFile->Name = L"textBoxInputFile";
+                 this->textBoxInputFile->Size = System::Drawing::Size(204, 20);
+                 this->textBoxInputFile->TabIndex = 1;
+                 // 
+                 // groupBoxRenderParams
+                 // 
+                 this->groupBoxRenderParams->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom) 
+                     | System::Windows::Forms::AnchorStyles::Right));
+                 this->groupBoxRenderParams->Controls->Add(this->trackBarBrightMult);
+                 this->groupBoxRenderParams->Controls->Add(this->checkBoxOneLayer);
+                 this->groupBoxRenderParams->Controls->Add(this->labelAlphaValue);
+                 this->groupBoxRenderParams->Controls->Add(this->trackBarAlphaValue);
+                 this->groupBoxRenderParams->Controls->Add(this->checkBoxAlphaTest);
+                 this->groupBoxRenderParams->Controls->Add(this->textBoxAlphaTest);
+                 this->groupBoxRenderParams->Controls->Add(this->checkBoxDepthTest);
+                 this->groupBoxRenderParams->Controls->Add(this->checkBoxTransperancy);
+                 this->groupBoxRenderParams->Controls->Add(this->labelLayerDistance);
+                 this->groupBoxRenderParams->Controls->Add(this->trackBarLayerDistance);
+                 this->groupBoxRenderParams->Controls->Add(this->trackBarLayerEnd);
+                 this->groupBoxRenderParams->Controls->Add(this->textBoxLayerEnd);
+                 this->groupBoxRenderParams->Controls->Add(this->groupBoxRenderType);
+                 this->groupBoxRenderParams->Controls->Add(this->textBoxBrightnessMult);
+                 this->groupBoxRenderParams->Controls->Add(this->labelBrightnessMult);
+                 this->groupBoxRenderParams->Controls->Add(this->textBoxLayerStart);
+                 this->groupBoxRenderParams->Controls->Add(this->labelCurrentLayer);
+                 this->groupBoxRenderParams->Controls->Add(this->trackBarLayerStart);
+                 this->groupBoxRenderParams->Location = System::Drawing::Point(523, 143);
+                 this->groupBoxRenderParams->Name = L"groupBoxRenderParams";
+                 this->groupBoxRenderParams->Size = System::Drawing::Size(216, 433);
+                 this->groupBoxRenderParams->TabIndex = 6;
+                 this->groupBoxRenderParams->TabStop = false;
+                 this->groupBoxRenderParams->Text = L"Параметры визуализации";
+                 // 
+                 // trackBarBrightMult
+                 // 
+                 this->trackBarBrightMult->Location = System::Drawing::Point(5, 388);
+                 this->trackBarBrightMult->Maximum = 50;
+                 this->trackBarBrightMult->Minimum = 1;
+                 this->trackBarBrightMult->Name = L"trackBarBrightMult";
+                 this->trackBarBrightMult->Size = System::Drawing::Size(146, 45);
+                 this->trackBarBrightMult->TabIndex = 18;
+                 this->trackBarBrightMult->Value = 1;
+                 this->trackBarBrightMult->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarBrightMult_ValueChanged);
+                 // 
+                 // checkBoxOneLayer
+                 // 
+                 this->checkBoxOneLayer->AutoSize = true;
+                 this->checkBoxOneLayer->Location = System::Drawing::Point(43, 171);
+                 this->checkBoxOneLayer->Name = L"checkBoxOneLayer";
+                 this->checkBoxOneLayer->Size = System::Drawing::Size(90, 17);
+                 this->checkBoxOneLayer->TabIndex = 17;
+                 this->checkBoxOneLayer->Text = L"Только один";
+                 this->checkBoxOneLayer->UseVisualStyleBackColor = true;
+                 this->checkBoxOneLayer->CheckedChanged += gcnew System::EventHandler(this, &MainForm::checkBoxOneLayer_CheckedChanged);
+                 // 
+                 // labelAlphaValue
+                 // 
+                 this->labelAlphaValue->AutoSize = true;
+                 this->labelAlphaValue->Location = System::Drawing::Point(6, 310);
+                 this->labelAlphaValue->Name = L"labelAlphaValue";
+                 this->labelAlphaValue->Size = System::Drawing::Size(94, 13);
+                 this->labelAlphaValue->TabIndex = 16;
+                 this->labelAlphaValue->Text = L"Пороговое знач.:";
+                 // 
+                 // trackBarAlphaValue
+                 // 
+                 this->trackBarAlphaValue->Location = System::Drawing::Point(9, 326);
+                 this->trackBarAlphaValue->Maximum = 1000;
+                 this->trackBarAlphaValue->Name = L"trackBarAlphaValue";
+                 this->trackBarAlphaValue->Size = System::Drawing::Size(142, 45);
+                 this->trackBarAlphaValue->TabIndex = 15;
+                 this->trackBarAlphaValue->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarAlphaValue_ValueChanged);
+                 // 
+                 // checkBoxAlphaTest
+                 // 
+                 this->checkBoxAlphaTest->AutoSize = true;
+                 this->checkBoxAlphaTest->Checked = true;
+                 this->checkBoxAlphaTest->CheckState = System::Windows::Forms::CheckState::Checked;
+                 this->checkBoxAlphaTest->Location = System::Drawing::Point(103, 309);
+                 this->checkBoxAlphaTest->Name = L"checkBoxAlphaTest";
+                 this->checkBoxAlphaTest->Size = System::Drawing::Size(95, 17);
+                 this->checkBoxAlphaTest->TabIndex = 14;
+                 this->checkBoxAlphaTest->Text = L"ALPHA_TEST";
+                 this->checkBoxAlphaTest->UseVisualStyleBackColor = true;
+                 this->checkBoxAlphaTest->CheckedChanged += gcnew System::EventHandler(this, &MainForm::checkBoxAlphaTest_CheckedChanged);
+                 this->checkBoxAlphaTest->EnabledChanged += gcnew System::EventHandler(this, &MainForm::checkBoxAlphaTest_EnabledChanged);
+                 // 
+                 // textBoxAlphaTest
+                 // 
+                 this->textBoxAlphaTest->Location = System::Drawing::Point(157, 326);
+                 this->textBoxAlphaTest->Name = L"textBoxAlphaTest";
+                 this->textBoxAlphaTest->Size = System::Drawing::Size(43, 20);
+                 this->textBoxAlphaTest->TabIndex = 13;
+                 this->textBoxAlphaTest->Text = L"0,0";
+                 this->textBoxAlphaTest->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
+                 this->textBoxAlphaTest->TextChanged += gcnew System::EventHandler(this, &MainForm::textBox1_TextChanged);
+                 // 
+                 // checkBoxDepthTest
+                 // 
+                 this->checkBoxDepthTest->AutoSize = true;
+                 this->checkBoxDepthTest->Checked = true;
+                 this->checkBoxDepthTest->CheckState = System::Windows::Forms::CheckState::Checked;
+                 this->checkBoxDepthTest->Enabled = false;
+                 this->checkBoxDepthTest->Location = System::Drawing::Point(103, 291);
+                 this->checkBoxDepthTest->Name = L"checkBoxDepthTest";
+                 this->checkBoxDepthTest->Size = System::Drawing::Size(97, 17);
+                 this->checkBoxDepthTest->TabIndex = 12;
+                 this->checkBoxDepthTest->Text = L"DEPTH_TEST";
+                 this->checkBoxDepthTest->UseVisualStyleBackColor = true;
+                 // 
+                 // checkBoxTransperancy
+                 // 
+                 this->checkBoxTransperancy->AutoSize = true;
+                 this->checkBoxTransperancy->Location = System::Drawing::Point(13, 291);
+                 this->checkBoxTransperancy->Name = L"checkBoxTransperancy";
+                 this->checkBoxTransperancy->Size = System::Drawing::Size(91, 17);
+                 this->checkBoxTransperancy->TabIndex = 11;
+                 this->checkBoxTransperancy->Text = L"Transperancy";
+                 this->checkBoxTransperancy->UseVisualStyleBackColor = true;
+                 this->checkBoxTransperancy->CheckedChanged += gcnew System::EventHandler(this, &MainForm::checkBoxTransperancy_CheckedChanged);
+                 // 
+                 // labelLayerDistance
+                 // 
+                 this->labelLayerDistance->AutoSize = true;
+                 this->labelLayerDistance->Location = System::Drawing::Point(10, 247);
+                 this->labelLayerDistance->Name = L"labelLayerDistance";
+                 this->labelLayerDistance->Size = System::Drawing::Size(147, 13);
+                 this->labelLayerDistance->TabIndex = 10;
+                 this->labelLayerDistance->Text = L"Расстояние между слоями:";
+                 // 
+                 // trackBarLayerDistance
+                 // 
+                 this->trackBarLayerDistance->Location = System::Drawing::Point(9, 263);
+                 this->trackBarLayerDistance->Maximum = 150;
+                 this->trackBarLayerDistance->Minimum = 1;
+                 this->trackBarLayerDistance->Name = L"trackBarLayerDistance";
+                 this->trackBarLayerDistance->Size = System::Drawing::Size(200, 45);
+                 this->trackBarLayerDistance->TabIndex = 9;
+                 this->trackBarLayerDistance->Value = 35;
+                 // 
+                 // trackBarLayerEnd
+                 // 
+                 this->trackBarLayerEnd->Location = System::Drawing::Point(6, 215);
+                 this->trackBarLayerEnd->Maximum = 0;
+                 this->trackBarLayerEnd->Name = L"trackBarLayerEnd";
+                 this->trackBarLayerEnd->Size = System::Drawing::Size(204, 45);
+                 this->trackBarLayerEnd->TabIndex = 8;
+                 this->trackBarLayerEnd->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarLayerEnd_ValueChanged);
+                 // 
+                 // textBoxLayerEnd
+                 // 
+                 this->textBoxLayerEnd->Location = System::Drawing::Point(171, 169);
+                 this->textBoxLayerEnd->Name = L"textBoxLayerEnd";
+                 this->textBoxLayerEnd->Size = System::Drawing::Size(29, 20);
+                 this->textBoxLayerEnd->TabIndex = 7;
+                 this->textBoxLayerEnd->Text = L"0";
+                 this->textBoxLayerEnd->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
+                 this->textBoxLayerEnd->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxLayerEnd_TextChanged);
+                 // 
+                 // groupBoxRenderType
+                 // 
+                 this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeShader);
+                 this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeTexture3D);
+                 this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeTexture);
+                 this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeVBO);
+                 this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeImmediate);
+                 this->groupBoxRenderType->Location = System::Drawing::Point(6, 19);
+                 this->groupBoxRenderType->Name = L"groupBoxRenderType";
+                 this->groupBoxRenderType->Size = System::Drawing::Size(204, 134);
+                 this->groupBoxRenderType->TabIndex = 6;
+                 this->groupBoxRenderType->TabStop = false;
+                 this->groupBoxRenderType->Text = L"Метод визуализации";
+                 // 
+                 // radioButtonRenderTypeTexture3D
+                 // 
+                 this->radioButtonRenderTypeTexture3D->AutoSize = true;
+                 this->radioButtonRenderTypeTexture3D->Location = System::Drawing::Point(7, 88);
+                 this->radioButtonRenderTypeTexture3D->Name = L"radioButtonRenderTypeTexture3D";
+                 this->radioButtonRenderTypeTexture3D->Size = System::Drawing::Size(162, 17);
+                 this->radioButtonRenderTypeTexture3D->TabIndex = 3;
+                 this->radioButtonRenderTypeTexture3D->Text = L"Использовать 3D текстуру";
+                 this->radioButtonRenderTypeTexture3D->UseVisualStyleBackColor = true;
+                 this->radioButtonRenderTypeTexture3D->CheckedChanged += gcnew System::EventHandler(this, &MainForm::radioButtonRenderTypeTexture3D_CheckedChanged);
+                 // 
+                 // radioButtonRenderTypeTexture
+                 // 
+                 this->radioButtonRenderTypeTexture->AutoSize = true;
+                 this->radioButtonRenderTypeTexture->Location = System::Drawing::Point(7, 65);
+                 this->radioButtonRenderTypeTexture->Name = L"radioButtonRenderTypeTexture";
+                 this->radioButtonRenderTypeTexture->Size = System::Drawing::Size(165, 17);
+                 this->radioButtonRenderTypeTexture->TabIndex = 2;
+                 this->radioButtonRenderTypeTexture->Text = L"Использовать 2D текстуры";
+                 this->radioButtonRenderTypeTexture->UseVisualStyleBackColor = true;
+                 this->radioButtonRenderTypeTexture->CheckedChanged += gcnew System::EventHandler(this, &MainForm::radioButtonRenderTypeTexture_CheckedChanged);
+                 // 
+                 // radioButtonRenderTypeVBO
+                 // 
+                 this->radioButtonRenderTypeVBO->AutoSize = true;
+                 this->radioButtonRenderTypeVBO->Location = System::Drawing::Point(7, 42);
+                 this->radioButtonRenderTypeVBO->Name = L"radioButtonRenderTypeVBO";
+                 this->radioButtonRenderTypeVBO->Size = System::Drawing::Size(120, 17);
+                 this->radioButtonRenderTypeVBO->TabIndex = 1;
+                 this->radioButtonRenderTypeVBO->Text = L"Vertex Buffer Object";
+                 this->radioButtonRenderTypeVBO->UseVisualStyleBackColor = true;
+                 this->radioButtonRenderTypeVBO->CheckedChanged += gcnew System::EventHandler(this, &MainForm::radioButtonRenderTypeVBO_CheckedChanged);
+                 // 
+                 // radioButtonRenderTypeImmediate
+                 // 
+                 this->radioButtonRenderTypeImmediate->AutoSize = true;
+                 this->radioButtonRenderTypeImmediate->Location = System::Drawing::Point(7, 19);
+                 this->radioButtonRenderTypeImmediate->Name = L"radioButtonRenderTypeImmediate";
+                 this->radioButtonRenderTypeImmediate->Size = System::Drawing::Size(73, 17);
+                 this->radioButtonRenderTypeImmediate->TabIndex = 0;
+                 this->radioButtonRenderTypeImmediate->Text = L"Immediate";
+                 this->radioButtonRenderTypeImmediate->UseVisualStyleBackColor = true;
+                 // 
+                 // textBoxBrightnessMult
+                 // 
+                 this->textBoxBrightnessMult->Location = System::Drawing::Point(157, 388);
+                 this->textBoxBrightnessMult->Name = L"textBoxBrightnessMult";
+                 this->textBoxBrightnessMult->Size = System::Drawing::Size(41, 20);
+                 this->textBoxBrightnessMult->TabIndex = 4;
+                 this->textBoxBrightnessMult->Text = L"30,0";
+                 this->textBoxBrightnessMult->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
+                 this->textBoxBrightnessMult->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxBrightnessMult_TextChanged);
+                 // 
+                 // labelBrightnessMult
+                 // 
+                 this->labelBrightnessMult->AutoSize = true;
+                 this->labelBrightnessMult->Location = System::Drawing::Point(6, 370);
+                 this->labelBrightnessMult->Name = L"labelBrightnessMult";
+                 this->labelBrightnessMult->Size = System::Drawing::Size(112, 13);
+                 this->labelBrightnessMult->TabIndex = 3;
+                 this->labelBrightnessMult->Text = L"Множитель яркости:";
+                 // 
+                 // textBoxLayerStart
+                 // 
+                 this->textBoxLayerStart->Location = System::Drawing::Point(133, 169);
+                 this->textBoxLayerStart->Name = L"textBoxLayerStart";
+                 this->textBoxLayerStart->Size = System::Drawing::Size(32, 20);
+                 this->textBoxLayerStart->TabIndex = 2;
+                 this->textBoxLayerStart->Text = L"0";
+                 this->textBoxLayerStart->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
+                 this->textBoxLayerStart->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxCurrentLayer_TextChanged);
+                 // 
+                 // labelCurrentLayer
+                 // 
+                 this->labelCurrentLayer->AutoSize = true;
+                 this->labelCurrentLayer->Location = System::Drawing::Point(6, 172);
+                 this->labelCurrentLayer->Name = L"labelCurrentLayer";
+                 this->labelCurrentLayer->Size = System::Drawing::Size(35, 13);
+                 this->labelCurrentLayer->TabIndex = 1;
+                 this->labelCurrentLayer->Text = L"Слои:";
+                 // 
+                 // trackBarLayerStart
+                 // 
+                 this->trackBarLayerStart->Location = System::Drawing::Point(6, 186);
+                 this->trackBarLayerStart->Maximum = 0;
+                 this->trackBarLayerStart->Name = L"trackBarLayerStart";
+                 this->trackBarLayerStart->Size = System::Drawing::Size(204, 45);
+                 this->trackBarLayerStart->TabIndex = 0;
+                 this->trackBarLayerStart->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarLayer_ValueChanged);
+                 // 
+                 // radioButtonRenderTypeShader
+                 // 
+                 this->radioButtonRenderTypeShader->AutoSize = true;
+                 this->radioButtonRenderTypeShader->Checked = true;
+                 this->radioButtonRenderTypeShader->Location = System::Drawing::Point(7, 111);
+                 this->radioButtonRenderTypeShader->Name = L"radioButtonRenderTypeShader";
+                 this->radioButtonRenderTypeShader->Size = System::Drawing::Size(147, 17);
+                 this->radioButtonRenderTypeShader->TabIndex = 4;
+                 this->radioButtonRenderTypeShader->TabStop = true;
+                 this->radioButtonRenderTypeShader->Text = L"Использовать шейдеры";
+                 this->radioButtonRenderTypeShader->UseVisualStyleBackColor = true;
+                 this->radioButtonRenderTypeShader->CheckedChanged += gcnew System::EventHandler(this, &MainForm::radioButtonRenderTypeShader_CheckedChanged);
+                 // 
+                 // MainForm
+                 // 
+                 this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
+                 this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
+                 this->ClientSize = System::Drawing::Size(744, 594);
+                 this->Controls->Add(this->groupBoxRenderParams);
+                 this->Controls->Add(this->groupBoxLoadData);
+                 this->Controls->Add(this->groupBoxRender);
+                 this->Controls->Add(this->labelStatus);
+                 this->DoubleBuffered = true;
+                 this->MinimumSize = System::Drawing::Size(640, 480);
+                 this->Name = L"MainForm";
+                 this->Text = L"Аццкая рисовалка";
+                 this->WindowState = System::Windows::Forms::FormWindowState::Maximized;
+                 this->Load += gcnew System::EventHandler(this, &MainForm::MainForm_Load);
+                 this->FormClosing += gcnew System::Windows::Forms::FormClosingEventHandler(this, &MainForm::MainForm_FormClosing);
+                 this->Resize += gcnew System::EventHandler(this, &MainForm::MainForm_Resize);
+                 this->groupBoxRender->ResumeLayout(false);
+                 this->groupBoxLoadData->ResumeLayout(false);
+                 this->groupBoxLoadData->PerformLayout();
+                 this->groupBoxRenderParams->ResumeLayout(false);
+                 this->groupBoxRenderParams->PerformLayout();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarBrightMult))->EndInit();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarAlphaValue))->EndInit();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerDistance))->EndInit();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerEnd))->EndInit();
+                 this->groupBoxRenderType->ResumeLayout(false);
+                 this->groupBoxRenderType->PerformLayout();
+                 (cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->trackBarLayerStart))->EndInit();
+                 this->ResumeLayout(false);
+                 this->PerformLayout();
 
-			 }
+             }
 #pragma endregion
     private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e) {
                  if (this->openDataDialog->ShowDialog() == Windows::Forms::DialogResult::OK) {
@@ -812,6 +829,8 @@ private: System::Windows::Forms::TrackBar^  trackBarBrightMult;
                  layerTextures = 0;
                  vertexVBOID = indexVBOID = colorVBOID = 0;
                  alphaTestValue = 0.2f;
+
+                 PrepareShaders();
              }
 
     private: System::Void MainForm_Resize(System::Object^  sender, System::EventArgs^  e) {
@@ -840,6 +859,9 @@ private: System::Windows::Forms::TrackBar^  trackBarBrightMult;
                  glLoadIdentity();
 
                  glTranslatef(0.0f, 0.0f, -distance);
+                 if (radioButtonRenderTypeShader->Checked) {
+                     glTranslatef(0.0f, 0.0f, distance * 0.995f);
+                 }
                  //glTranslatef(0.0f, 0.0f, -3.0f);
                  glRotatef(90.0f, 0.0f, 0.0, 1.0f);
                  glRotatef(angleXRotation, 1.0f, 0.0f, 0.0f);
@@ -909,7 +931,6 @@ private: System::Windows::Forms::TrackBar^  trackBarBrightMult;
                      }
                      else if (radioButtonRenderTypeTexture->Checked ||
                               radioButtonRenderTypeTexture3D->Checked) {
-
                          float localDepth = -((float)(trackBarLayerEnd->Value - trackBarLayerStart->Value) * data->scaleZ * trackBarLayerDistance->Value / 2.0f);
                          float width = (float)(data->sizeX / 2) * data->scaleX;
                          float height = (float)(data->sizeY / 2) * data->scaleY;
@@ -945,6 +966,42 @@ private: System::Windows::Forms::TrackBar^  trackBarBrightMult;
                          glBindTexture(target, 0);
                          glDisable(target);
                      }
+                     else if (radioButtonRenderTypeShader->Checked) {
+                         glEnable(GL_TEXTURE_3D);
+                         glActiveTexture(GL_TEXTURE0);
+                         glBindTexture(GL_TEXTURE_3D, shaderTexture);
+
+                         glUseProgram(shaderProg);
+
+                         GLint texLoc;
+                         texLoc = glGetUniformLocation(shaderProg, "myTexture");
+                         glUniform1i(texLoc, 0);
+
+                         pCoord = trackBarLayerStart->Value / (float)(data->sizeZ - 1);
+                         GLint pCoordLoc;
+                         pCoordLoc = glGetUniformLocation(shaderProg, "pCoord");
+                         glUniform1f(pCoordLoc, pCoord);
+
+                         glUseProgram(shaderProg);
+                         glBegin(GL_QUADS);
+                         glTexCoord2f(1.0f, 1.0f); glVertex3f(+1.0f, +1.0f, 0.0f);
+                         glTexCoord2f(1.0f, 0.0f); glVertex3f(+1.0f, -1.0f, 0.0f);
+                         glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 0.0f);
+                         glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, +1.0f, 0.0f);
+                         glEnd();
+                         glUseProgram(NULL);
+
+                         glBegin(GL_QUADS);
+                             glTexCoord2f(1.0f, 1.0f); glVertex3f(+1.0f, +1.0f, 0.0f);
+                             glTexCoord2f(1.0f, 0.0f); glVertex3f(+1.0f, -1.0f, 0.0f);
+                             glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 0.0f);
+                             glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, +1.0f, 0.0f);
+                         glEnd();
+                         
+                         glUseProgram(NULL);
+
+                         glDisable(GL_TEXTURE_3D);
+                     }
                  }
 
                  if (checkBoxTransperancy->Checked) {
@@ -975,6 +1032,57 @@ private: System::Windows::Forms::TrackBar^  trackBarBrightMult;
                      glTranslatef(-data->scaleX, data->sizeY * data->scaleY, 0.0f);
                  }
                  glPopMatrix();
+             }
+
+    private: Void PrepareShaders() {
+                 vertShader = glCreateShader(GL_VERTEX_SHADER);
+                 fragShader = glCreateShader(GL_FRAGMENT_SHADER);
+
+                 const char** vertSource = (const char **)(LoadFile("vert.glsl"));
+                 const char** fragSource = (const char **)(LoadFile("frag.glsl"));
+
+                 glShaderSource(vertShader, 1, vertSource, NULL);
+                 glShaderSource(fragShader, 1, fragSource, NULL);
+
+                 GLint state = 0;
+
+                 glCompileShader(vertShader);
+                 glGetShaderiv(vertShader, GL_COMPILE_STATUS, &state);
+                 if (state != GL_TRUE) {
+                     printShaderInfoLog(vertShader);
+                     return;
+                 }
+
+                 state = 0;
+                 glCompileShader(fragShader);
+                 glGetShaderiv(fragShader, GL_COMPILE_STATUS, &state);
+                 if (state != GL_TRUE) {
+                     printShaderInfoLog(fragShader);
+                     return;
+                 }
+
+                 shaderProg = glCreateProgram();
+                 glAttachShader(shaderProg, vertShader);
+                 glAttachShader(shaderProg, fragShader);
+
+                 state = 0;
+                 glLinkProgram(shaderProg);
+                 glGetProgramiv(shaderProg, GL_LINK_STATUS, &state);
+
+                 if (state != GL_TRUE) {
+                     GLint capacity = 0;
+
+                     glGetProgramiv(shaderProg, GL_INFO_LOG_LENGTH, &capacity );
+
+                     char *info = new char[capacity];
+
+                     memset(info, 0, capacity);
+
+                     glGetProgramInfoLog(shaderProg, capacity, NULL, info);
+
+                     delete [] info;
+                     return;
+                 }
              }
 
     private: System::Void DrawTimer_Tick(System::Object^  sender, System::EventArgs^  e) {
@@ -1027,8 +1135,8 @@ private: System::Windows::Forms::TrackBar^  trackBarBrightMult;
                          radioButtonRenderTypeVBO_CheckedChanged(sender, e);
 
                          generateTextures();
-						 if (StaticDelInst)
-							StaticDelInst(data);
+                         if (StaticDelInst)
+                            StaticDelInst(data);
                      } else {
                          this->labelStatus->Text = "Error. Incorrect reading input data file.";
                      }
@@ -1070,13 +1178,23 @@ private: System::Windows::Forms::TrackBar^  trackBarBrightMult;
     private: System::Void generateTextures() {
                  ReleaseTextures();
 
-                 bool is3Dtexture = radioButtonRenderTypeTexture3D->Checked;
+                 bool is3Dtexture = !radioButtonRenderTypeTexture->Checked;
 
                  size_t numTextures = is3Dtexture ? 1 : data->sizeZ;
                  layerTextures = new GLuint[numTextures];
-                 glGenTextures(numTextures, layerTextures);
+                 if (!radioButtonRenderTypeShader->Checked) {
+                     glGenTextures(numTextures, layerTextures);
+                 }
+                 else {
+                     GLuint tmpTex;
+                     glGenTextures(numTextures, &tmpTex);
+                     shaderTexture = tmpTex;
+                 }
 
                  size_t dataSize = data->sizeX * data->sizeY * 2;
+                 if (radioButtonRenderTypeShader->Checked) {
+                     dataSize >>= 1;
+                 }
                  if (is3Dtexture) {
                      dataSize *= data->sizeZ;
                  }
@@ -1086,12 +1204,23 @@ private: System::Windows::Forms::TrackBar^  trackBarBrightMult;
                  size_t numLayers = is3Dtexture ? 1 : data->sizeZ;
                  for (size_t iLayer = 0; iLayer < numLayers; ++iLayer) {
                      for (size_t i = 0; i < dataSize; i += 2) {
-                         tmp[i] = data->data[i / 2 + iLayer * data->sizeX * data->sizeY] * 40 / maxVal;
-                         tmp[i + 1] = tmp[i];
+                         if (!radioButtonRenderTypeShader->Checked) {
+                                                      tmp[i] = (float)data->data[i / 2 + iLayer * data->sizeX * data->sizeY] * 40 / maxVal;
+                             tmp[i + 1] = tmp[i];
+                         }
+                         else {
+                             tmp[i] = (float)data->data[i] * 40 / maxVal;
+                             --i;
+                         }
                      }
 
                      glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                     glBindTexture(target, layerTextures[iLayer]);
+                     if (!radioButtonRenderTypeShader->Checked) {
+                         glBindTexture(target, layerTextures[iLayer]);
+                     }
+                     else {
+                         glBindTexture(target, shaderTexture);
+                     }
 
                      glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
@@ -1104,7 +1233,12 @@ private: System::Windows::Forms::TrackBar^  trackBarBrightMult;
                      glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
                      if (is3Dtexture) {
-                         glTexImage3D(GL_TEXTURE_3D, 0, GL_LUMINANCE_ALPHA, data->sizeX, data->sizeY, data->sizeZ, 0, GL_LUMINANCE_ALPHA, GL_FLOAT, tmp);
+                         if (radioButtonRenderTypeShader->Checked) {
+                             glTexImage3D(GL_TEXTURE_3D, 0, GL_ALPHA, data->sizeX, data->sizeY, data->sizeZ, 0, GL_ALPHA, GL_FLOAT, tmp);
+                         }
+                         else {
+                            glTexImage3D(GL_TEXTURE_3D, 0, GL_LUMINANCE_ALPHA, data->sizeX, data->sizeY, data->sizeZ, 0, GL_LUMINANCE_ALPHA, GL_FLOAT, tmp);
+                         }
                      }
                      else {
                          //glTexImage2D(GL_TEXTURE_2D, 0, 1, data->sizeX, data->sizeY, 0, GL_INTENSITY, GL_SHORT, data->data + iLayer * data->sizeX * data->sizeY * sizeof(short)); // не работает, сцуко! :(
@@ -1333,6 +1467,11 @@ private: System::Void radioButtonRenderTypeTexture3D_CheckedChanged(System::Obje
                  generateTextures();
              }
          }
+private: System::Void radioButtonRenderTypeShader_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
+             if (radioButtonRenderTypeShader->Checked) {
+                 generateTextures();
+             }
+         }
 private: System::Void checkBoxAlphaTest_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
              bool state = checkBoxAlphaTest->Checked;
              textBoxAlphaTest->Enabled = state;
@@ -1352,9 +1491,9 @@ private: System::Void checkBoxOneLayer_CheckedChanged(System::Object^  sender, S
              }
          }
 private: System::Void MainForm_FormClosing(System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e) {
-			 e->Cancel = true;
-			 Hide();
-		 }
+             e->Cancel = true;
+             Hide();
+         }
 };
 }
 

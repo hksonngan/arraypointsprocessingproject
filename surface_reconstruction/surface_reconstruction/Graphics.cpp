@@ -2,6 +2,10 @@
 
 #include "graphics.h"
 
+#include <fstream>
+
+using namespace std;
+
 //#define __ENABLE_LIGHTING
 
 int InitGL(GLvoid) {
@@ -27,4 +31,46 @@ int InitGL(GLvoid) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
 
     return TRUE;
+}
+
+
+char** LoadFile(const char *file) {
+    char ** lines = new char*[1];
+
+    lines[0] = NULL;
+
+    ifstream fs(file, ios :: ate );
+
+    size_t size = fs.tellg();
+
+    fs.seekg(0, ios::beg);
+
+    char* source = new char[size + 1];
+    memset(source, 0, size + 1);
+    fs.read(source, size);
+
+    lines[0] = source;
+
+    fs.close();
+
+    return lines;
+}
+
+void printShaderInfoLog(GLuint shader) {
+    int infologLen = 0;
+    int charsWritten  = 0;
+    GLchar *infoLog;
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infologLen);
+    if (infologLen > 0)
+    {
+        infoLog = (GLchar*) malloc(infologLen);
+        if (infoLog == NULL)
+        {
+            printf("ERROR: Could not allocate InfoLog buffer\n");
+            exit(1);
+        }
+        glGetShaderInfoLog(shader, infologLen, &charsWritten, infoLog);
+        printf("InfoLog:\n%s\n\n", infoLog);
+        free(infoLog);
+    }
 }

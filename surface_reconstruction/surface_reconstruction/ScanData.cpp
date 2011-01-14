@@ -19,13 +19,13 @@ ScanData::ScanData()
 
 ScanData::ScanData(Layer layer)
 {
-	sizeX = layer.sizeX;
-	sizeY = layer.sizeY;
-	sizeZ = 1;
-	TotalSize = sizeX*sizeY*sizeZ;
-	data = layer.data;
-	scaleX = layer.scaleX;
-	scaleY = layer.scaleY;
+    sizeX = layer.sizeX;
+    sizeY = layer.sizeY;
+    sizeZ = 1;
+    TotalSize = sizeX*sizeY*sizeZ;
+    data = layer.data;
+    scaleX = layer.scaleX;
+    scaleY = layer.scaleY;
 }
 
 ScanData::ScanData(const char *pathToBinFile) { LoadData(pathToBinFile); }
@@ -82,7 +82,7 @@ ScanData* ScanData::GetSubData(size_t z_first, size_t z_last)
  result->scaleX = scaleX;
  result->scaleY = scaleY;
  result->scaleZ = scaleZ;
-	
+    
  return result;
 }
 
@@ -93,7 +93,7 @@ short& ScanData::GetDensity(Layer &layer, size_t x, size_t y) { return layer.dat
 short& ScanData::GetDensity(size_t x, size_t y, size_t z) { return data[x + y * sizeX + z * sizeX * sizeY]; }
 
 double ScanData::GetDistination(size_t x1, size_t y1, size_t z1, 
-     							size_t x2, size_t y2, size_t z2) 
+                                 size_t x2, size_t y2, size_t z2) 
 {
  return abs(GetDensity(x1, y1, z1)-GetDensity(x2, y2, z2));
 }
