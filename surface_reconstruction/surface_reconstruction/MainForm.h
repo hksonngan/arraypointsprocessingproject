@@ -982,14 +982,10 @@ private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeShader;
                          pCoordLoc = glGetUniformLocation(shaderProg, "pCoord");
                          glUniform1f(pCoordLoc, pCoord);
 
-                         glUseProgram(shaderProg);
-                         glBegin(GL_QUADS);
-                         glTexCoord2f(1.0f, 1.0f); glVertex3f(+1.0f, +1.0f, 0.0f);
-                         glTexCoord2f(1.0f, 0.0f); glVertex3f(+1.0f, -1.0f, 0.0f);
-                         glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 0.0f);
-                         glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, +1.0f, 0.0f);
-                         glEnd();
-                         glUseProgram(NULL);
+                         float mult = brightnessMult / (float)(trackBarBrightMult->Maximum);
+                         GLint multLoc;
+                         multLoc = glGetUniformLocation(shaderProg, "multCoeff");
+                         glUniform1f(multLoc, mult);
 
                          glBegin(GL_QUADS);
                              glTexCoord2f(1.0f, 1.0f); glVertex3f(+1.0f, +1.0f, 0.0f);
@@ -1205,11 +1201,11 @@ private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeShader;
                  for (size_t iLayer = 0; iLayer < numLayers; ++iLayer) {
                      for (size_t i = 0; i < dataSize; i += 2) {
                          if (!radioButtonRenderTypeShader->Checked) {
-                                                      tmp[i] = (float)data->data[i / 2 + iLayer * data->sizeX * data->sizeY] * 40 / maxVal;
+                             tmp[i] = (float)data->data[i / 2 + iLayer * data->sizeX * data->sizeY] * 40 / maxVal;
                              tmp[i + 1] = tmp[i];
                          }
                          else {
-                             tmp[i] = (float)data->data[i] * 40 / maxVal;
+                             tmp[i] = (float)data->data[i] * 60 / maxVal;
                              --i;
                          }
                      }
