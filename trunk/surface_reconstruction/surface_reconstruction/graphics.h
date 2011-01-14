@@ -7,3 +7,6 @@
 #include <GL\GLU.h>
 
 int InitGL();
+
+char** LoadFile(const char *file);
+void printShaderInfoLog(GLuint shader);

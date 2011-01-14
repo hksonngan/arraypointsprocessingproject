@@ -335,6 +335,7 @@
 					>
 					<File
 						RelativePath=".\Segmentation\SegmentationForm.resx"
+						SubType="Designer"
 						>
 					</File>
 				</File>
@@ -348,6 +349,7 @@
 					>
 					<File
 						RelativePath=".\Clusterization\ClusterizationForm.resx"
+						SubType="Designer"
 						>
 					</File>
 				</File>
@@ -372,6 +374,18 @@
 			</File>
 			<File
 				RelativePath=".\app.rc"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Shaders"
+			>
+			<File
+				RelativePath=".\frag.glsl"
+				>
+			</File>
+			<File
+				RelativePath=".\vert.glsl"
 				>
 			</File>
 		</Filter>
