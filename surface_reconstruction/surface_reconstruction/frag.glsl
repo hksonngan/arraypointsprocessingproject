@@ -3,7 +3,7 @@ uniform float pCoord;
 
 uniform float multCoeff;
 
-const vec3 bmin = vec3(0.0);
+const vec3 bmin = vec3(-1.0);
 const vec3 bmax = vec3(1.0);
 
 struct Ray {
@@ -29,10 +29,15 @@ vec3 Raytrace(in Ray ray) {
 
     float start, final, time;
 
+    res = vec4 ( gl_TexCoord[0].st, 0, 1 );
     if (IntersectBox(ray, bmin, bmax, start, final)) {
-        //vec3 point = ray.origin + ray.direction * time;
+        vec3 point = ray.origin + ray.direction * start * 0.55;
 
-        res = vec3(texture3D(myTexture, ray.origin + ray.direction * final).a);
+        vec3 texCoord = vec3(1 - (point.x + 0.5) / 1.0, 1 - (point.y + 0.5) / 1.0, pCoord);
+        //vec3 texCoord = vec3((ray.direction.x + 0.5) / 1.0, gl_TexCoord[0].t, 0.5);
+        res = vec3(texture3D(myTexture, texCoord).a);
+        //res = vec3(texture3D(myTexture, vec3(gl_TexCoord[0].ts, 0)).a);
+        //res = vec3(0, start * 0.1, 0);
     }
 
     return res;
@@ -41,13 +46,13 @@ vec3 Raytrace(in Ray ray) {
 void main(void) {
     //gl_FragColor = vec4 ( gl_TexCoord[0].st, 0, 1 );
 
-    vec3 origin = vec3(0, 0, 0);
-    vec3 direction = vec3(-1, 0, 0) * gl_TexCoord[0].x + vec3(0, 1, 0) * gl_TexCoord[0].y;
+    vec3 origin = vec3(0, 0, -3.3);
+    vec3 direction = vec3(1, 0, 0) * (0.5 - gl_TexCoord[0].t) + vec3(0, -1, 0) * (0.5 - gl_TexCoord[0].s) + vec3(0, 0, 1);
     
-    Ray ray = Ray(origin, normalize(direction));
+    Ray ray = Ray(origin, direction);
 
-    gl_FragColor = vec4(Raytrace(ray), 1.0);
+    gl_FragColor = vec4(Raytrace(ray), 1.0) * multCoeff;
 
-    gl_FragColor = vec4(texture3D(myTexture, vec4(1 - gl_TexCoord[0].t, 1 - gl_TexCoord[0].s, pCoord, 0.0)).a) * multCoeff;
+    //gl_FragColor = vec4(texture3D(myTexture, vec4(1 - gl_TexCoord[0].t, 1 - gl_TexCoord[0].s, pCoord, 0.0)).a) * multCoeff;
     //gl_FragColor = vec4(texture3D(myTexture, vec4(1 - gl_TexCoord[0].t, 1 - gl_TexCoord[0].s, 0, 0.0)).a) * multCoeff;
 }
