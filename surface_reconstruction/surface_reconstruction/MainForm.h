@@ -166,6 +166,7 @@ private: System::Windows::Forms::CheckBox^  checkBoxAlphaTest;
 private: System::Windows::Forms::CheckBox^  checkBoxOneLayer;
 private: System::Windows::Forms::TrackBar^  trackBarBrightMult;
 private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeShader;
+private: System::Windows::Forms::Button^  buttonShaderRecompile;
 
 
 
@@ -222,6 +223,7 @@ private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeShader;
                  this->trackBarLayerEnd = (gcnew System::Windows::Forms::TrackBar());
                  this->textBoxLayerEnd = (gcnew System::Windows::Forms::TextBox());
                  this->groupBoxRenderType = (gcnew System::Windows::Forms::GroupBox());
+                 this->radioButtonRenderTypeShader = (gcnew System::Windows::Forms::RadioButton());
                  this->radioButtonRenderTypeTexture3D = (gcnew System::Windows::Forms::RadioButton());
                  this->radioButtonRenderTypeTexture = (gcnew System::Windows::Forms::RadioButton());
                  this->radioButtonRenderTypeVBO = (gcnew System::Windows::Forms::RadioButton());
@@ -231,7 +233,7 @@ private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeShader;
                  this->textBoxLayerStart = (gcnew System::Windows::Forms::TextBox());
                  this->labelCurrentLayer = (gcnew System::Windows::Forms::Label());
                  this->trackBarLayerStart = (gcnew System::Windows::Forms::TrackBar());
-                 this->radioButtonRenderTypeShader = (gcnew System::Windows::Forms::RadioButton());
+                 this->buttonShaderRecompile = (gcnew System::Windows::Forms::Button());
                  this->groupBoxRender->SuspendLayout();
                  this->groupBoxLoadData->SuspendLayout();
                  this->groupBoxRenderParams->SuspendLayout();
@@ -559,6 +561,7 @@ private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeShader;
                  // 
                  // groupBoxRenderType
                  // 
+                 this->groupBoxRenderType->Controls->Add(this->buttonShaderRecompile);
                  this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeShader);
                  this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeTexture3D);
                  this->groupBoxRenderType->Controls->Add(this->radioButtonRenderTypeTexture);
@@ -570,6 +573,19 @@ private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeShader;
                  this->groupBoxRenderType->TabIndex = 6;
                  this->groupBoxRenderType->TabStop = false;
                  this->groupBoxRenderType->Text = L"Метод визуализации";
+                 // 
+                 // radioButtonRenderTypeShader
+                 // 
+                 this->radioButtonRenderTypeShader->AutoSize = true;
+                 this->radioButtonRenderTypeShader->Checked = true;
+                 this->radioButtonRenderTypeShader->Location = System::Drawing::Point(7, 111);
+                 this->radioButtonRenderTypeShader->Name = L"radioButtonRenderTypeShader";
+                 this->radioButtonRenderTypeShader->Size = System::Drawing::Size(147, 17);
+                 this->radioButtonRenderTypeShader->TabIndex = 4;
+                 this->radioButtonRenderTypeShader->TabStop = true;
+                 this->radioButtonRenderTypeShader->Text = L"Использовать шейдеры";
+                 this->radioButtonRenderTypeShader->UseVisualStyleBackColor = true;
+                 this->radioButtonRenderTypeShader->CheckedChanged += gcnew System::EventHandler(this, &MainForm::radioButtonRenderTypeShader_CheckedChanged);
                  // 
                  // radioButtonRenderTypeTexture3D
                  // 
@@ -661,18 +677,15 @@ private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeShader;
                  this->trackBarLayerStart->TabIndex = 0;
                  this->trackBarLayerStart->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarLayer_ValueChanged);
                  // 
-                 // radioButtonRenderTypeShader
+                 // buttonShaderRecompile
                  // 
-                 this->radioButtonRenderTypeShader->AutoSize = true;
-                 this->radioButtonRenderTypeShader->Checked = true;
-                 this->radioButtonRenderTypeShader->Location = System::Drawing::Point(7, 111);
-                 this->radioButtonRenderTypeShader->Name = L"radioButtonRenderTypeShader";
-                 this->radioButtonRenderTypeShader->Size = System::Drawing::Size(147, 17);
-                 this->radioButtonRenderTypeShader->TabIndex = 4;
-                 this->radioButtonRenderTypeShader->TabStop = true;
-                 this->radioButtonRenderTypeShader->Text = L"Использовать шейдеры";
-                 this->radioButtonRenderTypeShader->UseVisualStyleBackColor = true;
-                 this->radioButtonRenderTypeShader->CheckedChanged += gcnew System::EventHandler(this, &MainForm::radioButtonRenderTypeShader_CheckedChanged);
+                 this->buttonShaderRecompile->Location = System::Drawing::Point(151, 107);
+                 this->buttonShaderRecompile->Name = L"buttonShaderRecompile";
+                 this->buttonShaderRecompile->Size = System::Drawing::Size(50, 24);
+                 this->buttonShaderRecompile->TabIndex = 5;
+                 this->buttonShaderRecompile->Text = L"Upd.";
+                 this->buttonShaderRecompile->UseVisualStyleBackColor = true;
+                 this->buttonShaderRecompile->Click += gcnew System::EventHandler(this, &MainForm::buttonShaderRecompile_Click);
                  // 
                  // MainForm
                  // 
@@ -953,7 +966,7 @@ private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeShader;
                                  } glEnd();
                              }
                              else if (target == GL_TEXTURE_3D) {
-                                 float texZCoord = (iLayer + 1) * 1.0f / (float)data->sizeZ;
+                                 float texZCoord = iLayer / (float)(data->sizeZ - 1);
                                  glBegin(GL_QUADS); {
                                      glTexCoord3f(1.0f, 1.0f, texZCoord); glVertex3f(-width, -height, +localDepth);
                                      glTexCoord3f(1.0f, 0.0f, texZCoord); glVertex3f(+width, -height, +localDepth);
@@ -1233,7 +1246,7 @@ private: System::Windows::Forms::RadioButton^  radioButtonRenderTypeShader;
                              glTexImage3D(GL_TEXTURE_3D, 0, GL_ALPHA, data->sizeX, data->sizeY, data->sizeZ, 0, GL_ALPHA, GL_FLOAT, tmp);
                          }
                          else {
-                            glTexImage3D(GL_TEXTURE_3D, 0, GL_LUMINANCE_ALPHA, data->sizeX, data->sizeY, data->sizeZ, 0, GL_LUMINANCE_ALPHA, GL_FLOAT, tmp);
+                             glTexImage3D(GL_TEXTURE_3D, 0, GL_LUMINANCE_ALPHA, data->sizeX, data->sizeY, data->sizeZ, 0, GL_LUMINANCE_ALPHA, GL_FLOAT, tmp);
                          }
                      }
                      else {
@@ -1489,6 +1502,9 @@ private: System::Void checkBoxOneLayer_CheckedChanged(System::Object^  sender, S
 private: System::Void MainForm_FormClosing(System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e) {
              e->Cancel = true;
              Hide();
+         }
+private: System::Void buttonShaderRecompile_Click(System::Object^  sender, System::EventArgs^  e) {
+             PrepareShaders();
          }
 };
 }
