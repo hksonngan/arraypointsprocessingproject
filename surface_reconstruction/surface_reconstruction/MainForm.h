@@ -105,7 +105,6 @@ namespace surface_reconstruction {
         GLuint *layerTextures, shaderTexture;
 
         GLuint vertShader, fragShader, shaderProg;
-        GLfloat pCoord;
 
         float angleXRotation, angleYRotation;
         Point mousePosition;
@@ -223,6 +222,7 @@ private: System::Windows::Forms::Button^  buttonShaderRecompile;
                  this->trackBarLayerEnd = (gcnew System::Windows::Forms::TrackBar());
                  this->textBoxLayerEnd = (gcnew System::Windows::Forms::TextBox());
                  this->groupBoxRenderType = (gcnew System::Windows::Forms::GroupBox());
+                 this->buttonShaderRecompile = (gcnew System::Windows::Forms::Button());
                  this->radioButtonRenderTypeShader = (gcnew System::Windows::Forms::RadioButton());
                  this->radioButtonRenderTypeTexture3D = (gcnew System::Windows::Forms::RadioButton());
                  this->radioButtonRenderTypeTexture = (gcnew System::Windows::Forms::RadioButton());
@@ -233,7 +233,6 @@ private: System::Windows::Forms::Button^  buttonShaderRecompile;
                  this->textBoxLayerStart = (gcnew System::Windows::Forms::TextBox());
                  this->labelCurrentLayer = (gcnew System::Windows::Forms::Label());
                  this->trackBarLayerStart = (gcnew System::Windows::Forms::TrackBar());
-                 this->buttonShaderRecompile = (gcnew System::Windows::Forms::Button());
                  this->groupBoxRender->SuspendLayout();
                  this->groupBoxLoadData->SuspendLayout();
                  this->groupBoxRenderParams->SuspendLayout();
@@ -436,7 +435,7 @@ private: System::Windows::Forms::Button^  buttonShaderRecompile;
                  // trackBarBrightMult
                  // 
                  this->trackBarBrightMult->Location = System::Drawing::Point(5, 388);
-                 this->trackBarBrightMult->Maximum = 50;
+                 this->trackBarBrightMult->Maximum = 100;
                  this->trackBarBrightMult->Minimum = 1;
                  this->trackBarBrightMult->Name = L"trackBarBrightMult";
                  this->trackBarBrightMult->Size = System::Drawing::Size(146, 45);
@@ -493,7 +492,7 @@ private: System::Windows::Forms::Button^  buttonShaderRecompile;
                  this->textBoxAlphaTest->Name = L"textBoxAlphaTest";
                  this->textBoxAlphaTest->Size = System::Drawing::Size(43, 20);
                  this->textBoxAlphaTest->TabIndex = 13;
-                 this->textBoxAlphaTest->Text = L"0,0";
+                 this->textBoxAlphaTest->Text = L"0";
                  this->textBoxAlphaTest->TextAlign = System::Windows::Forms::HorizontalAlignment::Right;
                  this->textBoxAlphaTest->TextChanged += gcnew System::EventHandler(this, &MainForm::textBox1_TextChanged);
                  // 
@@ -574,16 +573,26 @@ private: System::Windows::Forms::Button^  buttonShaderRecompile;
                  this->groupBoxRenderType->TabStop = false;
                  this->groupBoxRenderType->Text = L"Метод визуализации";
                  // 
+                 // buttonShaderRecompile
+                 // 
+                 this->buttonShaderRecompile->Location = System::Drawing::Point(151, 107);
+                 this->buttonShaderRecompile->Name = L"buttonShaderRecompile";
+                 this->buttonShaderRecompile->Size = System::Drawing::Size(50, 24);
+                 this->buttonShaderRecompile->TabIndex = 5;
+                 this->buttonShaderRecompile->Text = L"Upd.";
+                 this->buttonShaderRecompile->UseVisualStyleBackColor = true;
+                 this->buttonShaderRecompile->Click += gcnew System::EventHandler(this, &MainForm::buttonShaderRecompile_Click);
+                 // 
                  // radioButtonRenderTypeShader
                  // 
                  this->radioButtonRenderTypeShader->AutoSize = true;
                  this->radioButtonRenderTypeShader->Checked = true;
                  this->radioButtonRenderTypeShader->Location = System::Drawing::Point(7, 111);
                  this->radioButtonRenderTypeShader->Name = L"radioButtonRenderTypeShader";
-                 this->radioButtonRenderTypeShader->Size = System::Drawing::Size(147, 17);
+                 this->radioButtonRenderTypeShader->Size = System::Drawing::Size(114, 17);
                  this->radioButtonRenderTypeShader->TabIndex = 4;
                  this->radioButtonRenderTypeShader->TabStop = true;
-                 this->radioButtonRenderTypeShader->Text = L"Использовать шейдеры";
+                 this->radioButtonRenderTypeShader->Text = L"Raycasting (GLSL)";
                  this->radioButtonRenderTypeShader->UseVisualStyleBackColor = true;
                  this->radioButtonRenderTypeShader->CheckedChanged += gcnew System::EventHandler(this, &MainForm::radioButtonRenderTypeShader_CheckedChanged);
                  // 
@@ -676,16 +685,6 @@ private: System::Windows::Forms::Button^  buttonShaderRecompile;
                  this->trackBarLayerStart->Size = System::Drawing::Size(204, 45);
                  this->trackBarLayerStart->TabIndex = 0;
                  this->trackBarLayerStart->ValueChanged += gcnew System::EventHandler(this, &MainForm::trackBarLayer_ValueChanged);
-                 // 
-                 // buttonShaderRecompile
-                 // 
-                 this->buttonShaderRecompile->Location = System::Drawing::Point(151, 107);
-                 this->buttonShaderRecompile->Name = L"buttonShaderRecompile";
-                 this->buttonShaderRecompile->Size = System::Drawing::Size(50, 24);
-                 this->buttonShaderRecompile->TabIndex = 5;
-                 this->buttonShaderRecompile->Text = L"Upd.";
-                 this->buttonShaderRecompile->UseVisualStyleBackColor = true;
-                 this->buttonShaderRecompile->Click += gcnew System::EventHandler(this, &MainForm::buttonShaderRecompile_Click);
                  // 
                  // MainForm
                  // 
@@ -871,14 +870,17 @@ private: System::Windows::Forms::Button^  buttonShaderRecompile;
                  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                  glLoadIdentity();
 
-                 glTranslatef(0.0f, 0.0f, -distance);
-                 if (radioButtonRenderTypeShader->Checked) {
-                     glTranslatef(0.0f, 0.0f, distance * 0.995f);
+                 if (!radioButtonRenderTypeShader->Checked) {
+                     glTranslatef(0.0f, 0.0f, -distance);
                  }
-                 //glTranslatef(0.0f, 0.0f, -3.0f);
+                 else {
+                    glTranslatef(0.0f, 0.0f, -3.0f);
+                 }
                  glRotatef(90.0f, 0.0f, 0.0, 1.0f);
-                 glRotatef(angleXRotation, 1.0f, 0.0f, 0.0f);
-                 glRotatef(angleYRotation, 0.0f, 1.0f, 0.0f);
+                 if (!radioButtonRenderTypeShader->Checked) {
+                     glRotatef(angleXRotation, 1.0f, 0.0f, 0.0f);
+                     glRotatef(angleYRotation, 0.0f, 1.0f, 0.0f);
+                 }
                  /*
                  glBegin(GL_TRIANGLES); {
                  glColor3f((GLfloat)(rand() / (rand()+1)),
@@ -990,9 +992,22 @@ private: System::Windows::Forms::Button^  buttonShaderRecompile;
                          texLoc = glGetUniformLocation(shaderProg, "myTexture");
                          glUniform1i(texLoc, 0);
 
-                         pCoord = trackBarLayerStart->Value / (float)(data->sizeZ - 1);
+                         GLint startLayerLoc;
+                         startLayerLoc = glGetUniformLocation(shaderProg, "startLayer");
+                         glUniform1i(startLayerLoc, trackBarLayerStart->Value);
+
+                         GLint endLayerLoc;
+                         endLayerLoc = glGetUniformLocation(shaderProg, "endLayer");
+                         glUniform1i(endLayerLoc, trackBarLayerEnd->Value);
+
+                         GLint layerDistanceLoc;
+                         layerDistanceLoc = glGetUniformLocation(shaderProg, "layerDistance");
+                         glUniform1f(layerDistanceLoc, data->sizeZ * trackBarLayerDistance->Value);
+
+                         //float pCoord = trackBarLayerStart->Value / (float)(data->sizeZ - 1);
+                         float pCoord = 1.0 / (float)(data->sizeZ - 1);
                          GLint pCoordLoc;
-                         pCoordLoc = glGetUniformLocation(shaderProg, "pCoord");
+                         pCoordLoc = glGetUniformLocation(shaderProg, "pCoordPerLayer");
                          glUniform1f(pCoordLoc, pCoord);
 
                          float mult = brightnessMult / (float)(trackBarBrightMult->Maximum);
@@ -1000,11 +1015,27 @@ private: System::Windows::Forms::Button^  buttonShaderRecompile;
                          multLoc = glGetUniformLocation(shaderProg, "multCoeff");
                          glUniform1f(multLoc, mult);
 
+                         GLint yRotLoc;
+                         yRotLoc = glGetUniformLocation(shaderProg, "rotTheta");
+                         glUniform1f(yRotLoc, angleYRotation);
+
+                         GLint xRotLoc;
+                         xRotLoc = glGetUniformLocation(shaderProg, "rotPhi");
+                         glUniform1f(xRotLoc, angleXRotation);
+
+                         GLint distanceLoc;
+                         distanceLoc = glGetUniformLocation(shaderProg, "distance");
+                         glUniform1f(distanceLoc, distance * 0.005f);
+
+                         GLint alphaTestValueLoc;
+                         alphaTestValueLoc = glGetUniformLocation(shaderProg, "alphaTestValue");
+                         glUniform1f(alphaTestValueLoc, alphaTestValue);
+
                          glBegin(GL_QUADS);
-                             glTexCoord2f(1.0f, 1.0f); glVertex3f(+1.0f, +1.0f, 0.0f);
-                             glTexCoord2f(1.0f, 0.0f); glVertex3f(+1.0f, -1.0f, 0.0f);
-                             glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 0.0f);
-                             glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, +1.0f, 0.0f);
+                             glTexCoord2f(1.0f, 1.0f); glVertex3f(+2.0f, +2.0f, 0.0f);
+                             glTexCoord2f(1.0f, 0.0f); glVertex3f(+2.0f, -2.0f, 0.0f);
+                             glTexCoord2f(0.0f, 0.0f); glVertex3f(-2.0f, -2.0f, 0.0f);
+                             glTexCoord2f(0.0f, 1.0f); glVertex3f(-2.0f, +2.0f, 0.0f);
                          glEnd();
                          
                          glUseProgram(NULL);
@@ -1211,14 +1242,18 @@ private: System::Windows::Forms::Button^  buttonShaderRecompile;
 
                  GLenum target = is3Dtexture ? GL_TEXTURE_3D : GL_TEXTURE_2D;
                  size_t numLayers = is3Dtexture ? 1 : data->sizeZ;
+                 float additionalMult = 1.5;
+                 if (data->sizeZ < 30) {
+                     additionalMult = 10;
+                 }
                  for (size_t iLayer = 0; iLayer < numLayers; ++iLayer) {
                      for (size_t i = 0; i < dataSize; i += 2) {
                          if (!radioButtonRenderTypeShader->Checked) {
-                             tmp[i] = (float)data->data[i / 2 + iLayer * data->sizeX * data->sizeY] * 40 / maxVal;
+                             tmp[i] = (float)data->data[i / 2 + iLayer * data->sizeX * data->sizeY] * 5.0 * additionalMult / maxVal;
                              tmp[i + 1] = tmp[i];
                          }
                          else {
-                             tmp[i] = (float)data->data[i] * 60 / maxVal;
+                             tmp[i] = (float)data->data[i] * 5.0 * additionalMult / maxVal;
                              --i;
                          }
                      }
@@ -1345,7 +1380,7 @@ private: System::Windows::Forms::Button^  buttonShaderRecompile;
                          colorBuffer[i*32 + idx+0] = curColor;
                          colorBuffer[i*32 + idx+1] = curColor;
                          colorBuffer[i*32 + idx+2] = curColor;
-                         colorBuffer[i*32 + idx+3] = curColor; // alpha
+                         colorBuffer[i*32 + idx+3] = curColor / brightnessMult * 5; // alpha
                          //colorBuffer[i*32 + idx+3] = 0.5f; // alpha
                      }
                  }
