@@ -6,9 +6,9 @@
 void  surface_reconstruction::CentralForm::CreateDisplaySegmentation()
 {
     MainForm^ mainForm = gcnew MainForm();
-    mainForm->StaticDelInst = gcnew MyDel(this, &CentralForm::ChangeData);
-    MyDel ^ StaticDelInst = gcnew MyDel(mainForm, &MainForm::ChangeData);
+    mainForm->GetNewScanData = gcnew SetScanData(this, &CentralForm::ChangeData);
+	mainForm->GetIndexSelectVoxel = gcnew SetIndexVoxel(this, &CentralForm::SetIndexVoxelToSegmentation);
+    SetScanData ^ StaticDelInst = gcnew SetScanData(mainForm, &MainForm::ChangeData);
     DisplaySegmentationForm = mainForm;
-    segmentationForm->StaticDelInst = gcnew MyDel(mainForm, &MainForm::ChangeData);
-    //segmentationForm->data = safe_cast<MainForm>(mainForm->data);
+    segmentationForm->StaticDelInst = gcnew SetScanData(mainForm, &MainForm::ChangeData);
 }

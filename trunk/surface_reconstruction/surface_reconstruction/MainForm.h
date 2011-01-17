@@ -91,7 +91,8 @@ namespace surface_reconstruction {
 
     public:
         ScanData *data;
-        MyDel ^ StaticDelInst;
+        SetScanData ^ GetNewScanData;
+		SetIndexVoxel ^ GetIndexSelectVoxel;
     private:
         /// <summary>
         /// Required designer variable.
@@ -1175,8 +1176,8 @@ private: System::Windows::Forms::Button^  buttonShaderRecompile;
                          radioButtonRenderTypeVBO_CheckedChanged(sender, e);
 
                          generateTextures();
-                         if (StaticDelInst)
-                            StaticDelInst(data);
+                         if (GetNewScanData)
+                            GetNewScanData(data);
                      } else {
                          this->labelStatus->Text = "Error. Incorrect reading input data file.";
                      }
@@ -1441,6 +1442,36 @@ private: System::Windows::Forms::Button^  buttonShaderRecompile;
                  if (e->Button == Windows::Forms::MouseButtons::Left) {
                      mousePosition = e->Location;
                  }
+				 if ((data != 0) && (GetIndexSelectVoxel))
+				 {
+
+					 double d = double((((GLWindow->Size.Width) < (GLWindow->Size.Height)) ? 
+						 (GLWindow->Size.Width) : (GLWindow->Size.Height)));
+
+					 double x3 =  ((double(Convert::ToUInt32(e->X)) + 
+						 (d - double(GLWindow->Size.Width)) / 2.0) / d * data->sizeX);
+					 double y3 =  double(data->sizeY) - ((double(Convert::ToUInt32(e->Y)) + 
+						 (d - double(GLWindow->Size.Height)) / 2.0) / d * data->sizeY);
+
+					 size_t x = size_t(x3);
+					 size_t y = size_t(y3);
+
+					 if (x3 < 0)
+						x = 0;
+
+					 if (y3 < 0)
+						 y = 0;
+
+					 if (x3 > double(data->sizeX))
+						 x = data->sizeX;
+
+					 if (y3 > double(data->sizeY))
+						 y = data->sizeY;
+
+					 size_t z = Convert::ToUInt32(this->textBoxLayerEnd->Text);
+					 
+					 GetIndexSelectVoxel(x, y, z);
+				 }
              }
 
     private: System::Void GLWindow_MouseWheel(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) {

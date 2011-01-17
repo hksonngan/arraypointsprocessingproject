@@ -47,5 +47,6 @@ class ScanData
 
 namespace surface_reconstruction {
 
-	public delegate void MyDel(ScanData* sData);
+	public delegate void SetScanData(ScanData* sData);
+	public delegate void SetIndexVoxel(size_t x, size_t y, size_t z);
 }

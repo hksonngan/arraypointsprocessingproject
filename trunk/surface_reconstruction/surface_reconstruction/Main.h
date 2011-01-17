@@ -58,6 +58,11 @@ namespace surface_reconstruction {
 			segmentationForm->EnabledSegmentation();
 		}
 
+		void SetIndexVoxelToSegmentation(size_t x, size_t y, size_t z)
+		{
+			segmentationForm->SetIndexVoxel(x, y, z);
+		}
+
 
 	protected:
 		/// <summary>

@@ -27,7 +27,7 @@ namespace surface_reconstruction {
 	{
 	public:
 		SegmentsTree* tree;
-		SegmentsTree2* tree2;
+		SegmentsTreeGPU* treeGPU;
 
 	private: System::Windows::Forms::GroupBox^  LayerSegmentsTreeInfo;
 	private: System::Windows::Forms::GroupBox^  SegmentInfo;
@@ -48,9 +48,15 @@ namespace surface_reconstruction {
 
 	public: 
 		ScanData* data;
-		MyDel ^ StaticDelInst;
+		SetScanData ^ StaticDelInst;
 		ScanData* sd;
 		int segmentationType;
+		size_t indexSelectVoxel;
+		size_t x; 
+		size_t y; 
+		size_t z;
+		bool isConstStep;
+		StepLayers* steps;
 	private: System::Windows::Forms::DataGridView^  CurrentSegment;
 
 
@@ -98,9 +104,36 @@ namespace surface_reconstruction {
 	public: 
 
 	public: 
-		LayerSegmentsTree2* layerSelect2;
+		LayerSegmentsTreeGPU* layerSelectGPU;
 	private: System::Windows::Forms::Label^  MinVoxelLabel;
 	private: System::Windows::Forms::NumericUpDown^  MinVoxel;
+	private: System::Windows::Forms::GroupBox^  CoordinateBox;
+	private: System::Windows::Forms::CheckBox^  UseCoordinateVoxel;
+	private: System::Windows::Forms::TextBox^  ZTextBox;
+	private: System::Windows::Forms::TextBox^  YTextBox;
+	private: System::Windows::Forms::TextBox^  XTextBox;
+	private: System::Windows::Forms::Label^  Zlabel;
+	private: System::Windows::Forms::Label^  Ylabel;
+	private: System::Windows::Forms::Label^  Xlabel;
+	private: System::Windows::Forms::GroupBox^  SegmentationStepsBoxs;
+	private: System::Windows::Forms::Button^  SelectStep;
+	private: System::Windows::Forms::DataGridView^  StepsGrid;
+
+
+
+	private: System::Windows::Forms::CheckBox^  CheckConstStep;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  BorderDensity;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  Step;
+
+
+
+
+
+
+
+
+
+
 	public: 
 
 	public: 
@@ -119,15 +152,22 @@ namespace surface_reconstruction {
 			segmentationType = 0;
 			sd = new ScanData();
 			layerSelect = 0;
-			layerSelect2 = 0;
+			layerSelectGPU = 0;
 			isDisplayInitialData = true;
 			tree = 0;
-			tree2 = 0;
+			treeGPU = 0;
+			x = 0;
+			y = 0;
+			z = 0;
+			indexSelectVoxel = 0;
+			isConstStep = false; 
+			steps = new StepLayers();
 		}
 
 		void EnabledSegmentation()
 		{
 			SegmentationGroup->Enabled = true;
+			SegmentationStepsBoxs->Enabled = true;
 			sd->scaleX = data->scaleX;
 			sd->scaleY = data->scaleY;
 			sd->scaleZ = data->scaleZ;
@@ -144,6 +184,20 @@ namespace surface_reconstruction {
 		void DisplayData(ScanData* newData)
 		{
 			StaticDelInst(newData);
+		}
+
+		void SetIndexVoxel(size_t _x, size_t _y, size_t _z)
+		{
+			x = _x;
+			y = _y;
+			z = _z;
+			indexSelectVoxel = x + y * data->sizeX + z * data->sizeX * data->sizeY;
+			if (UseCoordinateVoxel->Checked)
+			{
+				XTextBox->Text = Convert::ToString(x);
+				YTextBox->Text = Convert::ToString(y);
+				ZTextBox->Text = Convert::ToString(z);
+			}
 		}
 
 	protected:
@@ -198,6 +252,14 @@ namespace surface_reconstruction {
 			this->MaxWeightSegment = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 			this->CheckSegment = (gcnew System::Windows::Forms::DataGridViewCheckBoxColumn());
 			this->SegmentationGroup = (gcnew System::Windows::Forms::GroupBox());
+			this->CoordinateBox = (gcnew System::Windows::Forms::GroupBox());
+			this->UseCoordinateVoxel = (gcnew System::Windows::Forms::CheckBox());
+			this->ZTextBox = (gcnew System::Windows::Forms::TextBox());
+			this->YTextBox = (gcnew System::Windows::Forms::TextBox());
+			this->XTextBox = (gcnew System::Windows::Forms::TextBox());
+			this->Zlabel = (gcnew System::Windows::Forms::Label());
+			this->Ylabel = (gcnew System::Windows::Forms::Label());
+			this->Xlabel = (gcnew System::Windows::Forms::Label());
 			this->MinVoxel = (gcnew System::Windows::Forms::NumericUpDown());
 			this->MinVoxelLabel = (gcnew System::Windows::Forms::Label());
 			this->Display = (gcnew System::Windows::Forms::GroupBox());
@@ -214,14 +276,23 @@ namespace surface_reconstruction {
 			this->CPU = (gcnew System::Windows::Forms::RadioButton());
 			this->SegmentationIteration = (gcnew System::Windows::Forms::Button());
 			this->StartSegmentation = (gcnew System::Windows::Forms::Button());
+			this->SegmentationStepsBoxs = (gcnew System::Windows::Forms::GroupBox());
+			this->CheckConstStep = (gcnew System::Windows::Forms::CheckBox());
+			this->SelectStep = (gcnew System::Windows::Forms::Button());
+			this->StepsGrid = (gcnew System::Windows::Forms::DataGridView());
+			this->BorderDensity = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->Step = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 			this->LayerSegmentsTreeInfo->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->LayerSegmentsGrid))->BeginInit();
 			this->SegmentInfo->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->CurrentSegment))->BeginInit();
 			this->SegmentationGroup->SuspendLayout();
+			this->CoordinateBox->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->MinVoxel))->BeginInit();
 			this->Display->SuspendLayout();
 			this->SegmentationType0->SuspendLayout();
+			this->SegmentationStepsBoxs->SuspendLayout();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->StepsGrid))->BeginInit();
 			this->SuspendLayout();
 			// 
 			// LayerSegmentsTreeInfo
@@ -231,16 +302,16 @@ namespace surface_reconstruction {
 			this->LayerSegmentsTreeInfo->Controls->Add(this->LayerSelect);
 			this->LayerSegmentsTreeInfo->Controls->Add(this->LayerSegmentsGrid);
 			this->LayerSegmentsTreeInfo->Enabled = false;
-			this->LayerSegmentsTreeInfo->Location = System::Drawing::Point(12, 217);
+			this->LayerSegmentsTreeInfo->Location = System::Drawing::Point(13, 197);
 			this->LayerSegmentsTreeInfo->Name = L"LayerSegmentsTreeInfo";
-			this->LayerSegmentsTreeInfo->Size = System::Drawing::Size(900, 246);
+			this->LayerSegmentsTreeInfo->Size = System::Drawing::Size(502, 246);
 			this->LayerSegmentsTreeInfo->TabIndex = 2;
 			this->LayerSegmentsTreeInfo->TabStop = false;
 			this->LayerSegmentsTreeInfo->Text = L"уровни сегментации";
 			// 
 			// Select
 			// 
-			this->Select->Location = System::Drawing::Point(606, 10);
+			this->Select->Location = System::Drawing::Point(398, 67);
 			this->Select->Name = L"Select";
 			this->Select->Size = System::Drawing::Size(75, 23);
 			this->Select->TabIndex = 3;
@@ -259,7 +330,7 @@ namespace surface_reconstruction {
 			// 
 			// LayerSelect
 			// 
-			this->LayerSelect->Location = System::Drawing::Point(500, 13);
+			this->LayerSelect->Location = System::Drawing::Point(388, 41);
 			this->LayerSelect->Name = L"LayerSelect";
 			this->LayerSelect->Size = System::Drawing::Size(100, 20);
 			this->LayerSelect->TabIndex = 1;
@@ -299,7 +370,7 @@ namespace surface_reconstruction {
 			this->SegmentInfo->Controls->Add(this->DisplaySegments);
 			this->SegmentInfo->Controls->Add(this->CurrentSegment);
 			this->SegmentInfo->Enabled = false;
-			this->SegmentInfo->Location = System::Drawing::Point(13, 469);
+			this->SegmentInfo->Location = System::Drawing::Point(13, 449);
 			this->SegmentInfo->Name = L"SegmentInfo";
 			this->SegmentInfo->Size = System::Drawing::Size(899, 285);
 			this->SegmentInfo->TabIndex = 3;
@@ -389,6 +460,7 @@ namespace surface_reconstruction {
 			// 
 			// SegmentationGroup
 			// 
+			this->SegmentationGroup->Controls->Add(this->CoordinateBox);
 			this->SegmentationGroup->Controls->Add(this->MinVoxel);
 			this->SegmentationGroup->Controls->Add(this->MinVoxelLabel);
 			this->SegmentationGroup->Controls->Add(this->Display);
@@ -404,10 +476,93 @@ namespace surface_reconstruction {
 			this->SegmentationGroup->Enabled = false;
 			this->SegmentationGroup->Location = System::Drawing::Point(12, 12);
 			this->SegmentationGroup->Name = L"SegmentationGroup";
-			this->SegmentationGroup->Size = System::Drawing::Size(900, 159);
+			this->SegmentationGroup->Size = System::Drawing::Size(900, 179);
 			this->SegmentationGroup->TabIndex = 4;
 			this->SegmentationGroup->TabStop = false;
 			this->SegmentationGroup->Text = L"Сегментация";
+			// 
+			// CoordinateBox
+			// 
+			this->CoordinateBox->Controls->Add(this->UseCoordinateVoxel);
+			this->CoordinateBox->Controls->Add(this->ZTextBox);
+			this->CoordinateBox->Controls->Add(this->YTextBox);
+			this->CoordinateBox->Controls->Add(this->XTextBox);
+			this->CoordinateBox->Controls->Add(this->Zlabel);
+			this->CoordinateBox->Controls->Add(this->Ylabel);
+			this->CoordinateBox->Controls->Add(this->Xlabel);
+			this->CoordinateBox->Location = System::Drawing::Point(12, 100);
+			this->CoordinateBox->Name = L"CoordinateBox";
+			this->CoordinateBox->Size = System::Drawing::Size(311, 72);
+			this->CoordinateBox->TabIndex = 21;
+			this->CoordinateBox->TabStop = false;
+			this->CoordinateBox->Text = L"Выбор координат начальной точки";
+			// 
+			// UseCoordinateVoxel
+			// 
+			this->UseCoordinateVoxel->AutoSize = true;
+			this->UseCoordinateVoxel->Checked = true;
+			this->UseCoordinateVoxel->CheckState = System::Windows::Forms::CheckState::Checked;
+			this->UseCoordinateVoxel->Location = System::Drawing::Point(147, 39);
+			this->UseCoordinateVoxel->Name = L"UseCoordinateVoxel";
+			this->UseCoordinateVoxel->Size = System::Drawing::Size(160, 17);
+			this->UseCoordinateVoxel->TabIndex = 27;
+			this->UseCoordinateVoxel->Text = L"использовать коордитаты";
+			this->UseCoordinateVoxel->UseVisualStyleBackColor = true;
+			this->UseCoordinateVoxel->CheckedChanged += gcnew System::EventHandler(this, &SegmentationForm::UseCoordinateVoxel_CheckedChanged);
+			// 
+			// ZTextBox
+			// 
+			this->ZTextBox->Location = System::Drawing::Point(176, 13);
+			this->ZTextBox->Name = L"ZTextBox";
+			this->ZTextBox->Size = System::Drawing::Size(100, 20);
+			this->ZTextBox->TabIndex = 26;
+			this->ZTextBox->Text = L"0";
+			this->ZTextBox->TextChanged += gcnew System::EventHandler(this, &SegmentationForm::ZTextBox_TextChanged);
+			// 
+			// YTextBox
+			// 
+			this->YTextBox->Location = System::Drawing::Point(38, 38);
+			this->YTextBox->Name = L"YTextBox";
+			this->YTextBox->Size = System::Drawing::Size(100, 20);
+			this->YTextBox->TabIndex = 25;
+			this->YTextBox->Text = L"0";
+			this->YTextBox->TextChanged += gcnew System::EventHandler(this, &SegmentationForm::YTextBox_TextChanged);
+			// 
+			// XTextBox
+			// 
+			this->XTextBox->Location = System::Drawing::Point(38, 16);
+			this->XTextBox->Name = L"XTextBox";
+			this->XTextBox->Size = System::Drawing::Size(100, 20);
+			this->XTextBox->TabIndex = 24;
+			this->XTextBox->Text = L"0";
+			this->XTextBox->TextChanged += gcnew System::EventHandler(this, &SegmentationForm::XTextBox_TextChanged);
+			// 
+			// Zlabel
+			// 
+			this->Zlabel->AutoSize = true;
+			this->Zlabel->Location = System::Drawing::Point(144, 16);
+			this->Zlabel->Name = L"Zlabel";
+			this->Zlabel->Size = System::Drawing::Size(26, 13);
+			this->Zlabel->TabIndex = 23;
+			this->Zlabel->Text = L"Z = ";
+			// 
+			// Ylabel
+			// 
+			this->Ylabel->AutoSize = true;
+			this->Ylabel->Location = System::Drawing::Point(6, 41);
+			this->Ylabel->Name = L"Ylabel";
+			this->Ylabel->Size = System::Drawing::Size(26, 13);
+			this->Ylabel->TabIndex = 22;
+			this->Ylabel->Text = L"Y = ";
+			// 
+			// Xlabel
+			// 
+			this->Xlabel->AutoSize = true;
+			this->Xlabel->Location = System::Drawing::Point(6, 19);
+			this->Xlabel->Name = L"Xlabel";
+			this->Xlabel->Size = System::Drawing::Size(26, 13);
+			this->Xlabel->TabIndex = 21;
+			this->Xlabel->Text = L"X = ";
 			// 
 			// MinVoxel
 			// 
@@ -416,7 +571,7 @@ namespace surface_reconstruction {
 			this->MinVoxel->Name = L"MinVoxel";
 			this->MinVoxel->Size = System::Drawing::Size(120, 20);
 			this->MinVoxel->TabIndex = 13;
-			this->MinVoxel->Value = System::Decimal(gcnew cli::array< System::Int32 >(4) {10000, 0, 0, 0});
+			this->MinVoxel->Value = System::Decimal(gcnew cli::array< System::Int32 >(4) {1000, 0, 0, 0});
 			// 
 			// MinVoxelLabel
 			// 
@@ -513,9 +668,9 @@ namespace surface_reconstruction {
 			this->StartStepLabel->AutoSize = true;
 			this->StartStepLabel->Location = System::Drawing::Point(341, 26);
 			this->StartStepLabel->Name = L"StartStepLabel";
-			this->StartStepLabel->Size = System::Drawing::Size(99, 13);
+			this->StartStepLabel->Size = System::Drawing::Size(98, 13);
 			this->StartStepLabel->TabIndex = 5;
-			this->StartStepLabel->Text = L"шаг буферизации:";
+			this->StartStepLabel->Text = L"шаг сегментации:";
 			this->StartStepLabel->Click += gcnew System::EventHandler(this, &SegmentationForm::StartStepLabel_Click);
 			// 
 			// SegmentationType0
@@ -574,11 +729,66 @@ namespace surface_reconstruction {
 			this->StartSegmentation->UseVisualStyleBackColor = true;
 			this->StartSegmentation->Click += gcnew System::EventHandler(this, &SegmentationForm::StartSegmentation_Click);
 			// 
+			// SegmentationStepsBoxs
+			// 
+			this->SegmentationStepsBoxs->Controls->Add(this->CheckConstStep);
+			this->SegmentationStepsBoxs->Controls->Add(this->SelectStep);
+			this->SegmentationStepsBoxs->Controls->Add(this->StepsGrid);
+			this->SegmentationStepsBoxs->Enabled = false;
+			this->SegmentationStepsBoxs->Location = System::Drawing::Point(537, 197);
+			this->SegmentationStepsBoxs->Name = L"SegmentationStepsBoxs";
+			this->SegmentationStepsBoxs->Size = System::Drawing::Size(375, 246);
+			this->SegmentationStepsBoxs->TabIndex = 5;
+			this->SegmentationStepsBoxs->TabStop = false;
+			this->SegmentationStepsBoxs->Text = L"пороги сегментации";
+			// 
+			// CheckConstStep
+			// 
+			this->CheckConstStep->AutoSize = true;
+			this->CheckConstStep->Location = System::Drawing::Point(161, 209);
+			this->CheckConstStep->Name = L"CheckConstStep";
+			this->CheckConstStep->Size = System::Drawing::Size(178, 17);
+			this->CheckConstStep->TabIndex = 2;
+			this->CheckConstStep->Text = L"постоянный шаг сегментации";
+			this->CheckConstStep->UseVisualStyleBackColor = true;
+			this->CheckConstStep->CheckedChanged += gcnew System::EventHandler(this, &SegmentationForm::CheckConstStep_CheckedChanged);
+			// 
+			// SelectStep
+			// 
+			this->SelectStep->Location = System::Drawing::Point(6, 205);
+			this->SelectStep->Name = L"SelectStep";
+			this->SelectStep->Size = System::Drawing::Size(149, 23);
+			this->SelectStep->TabIndex = 1;
+			this->SelectStep->Text = L"выбрать шаги сегментаци";
+			this->SelectStep->UseVisualStyleBackColor = true;
+			this->SelectStep->Click += gcnew System::EventHandler(this, &SegmentationForm::SelectStep_Click);
+			// 
+			// StepsGrid
+			// 
+			this->StepsGrid->ColumnHeadersHeightSizeMode = System::Windows::Forms::DataGridViewColumnHeadersHeightSizeMode::AutoSize;
+			this->StepsGrid->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(2) {this->BorderDensity, 
+				this->Step});
+			this->StepsGrid->Location = System::Drawing::Point(6, 19);
+			this->StepsGrid->Name = L"StepsGrid";
+			this->StepsGrid->Size = System::Drawing::Size(288, 180);
+			this->StepsGrid->TabIndex = 0;
+			// 
+			// BorderDensity
+			// 
+			this->BorderDensity->HeaderText = L"граница";
+			this->BorderDensity->Name = L"BorderDensity";
+			// 
+			// Step
+			// 
+			this->Step->HeaderText = L"Шаг";
+			this->Step->Name = L"Step";
+			// 
 			// SegmentationForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-			this->ClientSize = System::Drawing::Size(924, 766);
+			this->ClientSize = System::Drawing::Size(924, 744);
+			this->Controls->Add(this->SegmentationStepsBoxs);
 			this->Controls->Add(this->SegmentationGroup);
 			this->Controls->Add(this->SegmentInfo);
 			this->Controls->Add(this->LayerSegmentsTreeInfo);
@@ -594,11 +804,16 @@ namespace surface_reconstruction {
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->CurrentSegment))->EndInit();
 			this->SegmentationGroup->ResumeLayout(false);
 			this->SegmentationGroup->PerformLayout();
+			this->CoordinateBox->ResumeLayout(false);
+			this->CoordinateBox->PerformLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->MinVoxel))->EndInit();
 			this->Display->ResumeLayout(false);
 			this->Display->PerformLayout();
 			this->SegmentationType0->ResumeLayout(false);
 			this->SegmentationType0->PerformLayout();
+			this->SegmentationStepsBoxs->ResumeLayout(false);
+			this->SegmentationStepsBoxs->PerformLayout();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->StepsGrid))->EndInit();
 			this->ResumeLayout(false);
 
 		}
@@ -625,14 +840,14 @@ namespace surface_reconstruction {
 				 }
 				 else
 				 {
-					 tree2 = new SegmentsTree2(data);
-					 tree2->step = short(step);
+					 treeGPU = new SegmentsTreeGPU(data);
+					 treeGPU->step = short(step);
 					 SegmentationIteration->Enabled = true;
 					 LayerSegmentsGrid->RowCount = 1;
 					 LayerSegmentsGrid->Rows[0]->Cells[0]->Value = "0"; 
-					 unsigned int^ count = tree2->root->segmentCount;                 
+					 unsigned int^ count = treeGPU->root->segmentCount;                 
 					 LayerSegmentsGrid->Rows[0]->Cells[1]->Value = count->ToString(); 
-					 unsigned int^ w = tree2->root->maxCapacity;                 
+					 unsigned int^ w = treeGPU->root->maxCapacity;                 
 					 LayerSegmentsGrid->Rows[0]->Cells[2]->Value = w->ToString(); 
 				 }
 			 }
@@ -641,6 +856,13 @@ namespace surface_reconstruction {
 				 Hide();
 			 }
 	private: System::Void SegmentationForm_Load(System::Object^  sender, System::EventArgs^  e) {
+				 StepsGrid->RowCount = 2;
+				 StepsGrid->Rows[0]->Cells[0]->Value = "32760";
+				 StepsGrid->Rows[0]->Cells[1]->Value = "35";
+				 steps->Resize(StepsGrid->RowCount - 1);
+				 steps->border[0] = 32760;
+				 steps->count = 1;
+				 steps->steps[0] = 35;
 			 }
 	private: System::Void SegmentationIteration_Click(System::Object^  sender, System::EventArgs^  e) {
 				 String^ str = StartStep->Text;
@@ -653,8 +875,10 @@ namespace surface_reconstruction {
 				 if (segmentationType == 0)
 				 {
 					 tree->step = step;
-					 tree->minVoxel = size_t(MinVoxel->Value.ToOACurrency(MinVoxel->Value) / 10000);
-					 LayerSegmentsTree*  newLayer = tree->CreateNewLayer();
+					 tree->minCountVoxelInSegment = size_t(MinVoxel->Value.ToOACurrency(MinVoxel->Value) / 10000);
+					 tree->isConstStep = isConstStep;
+					 tree->steps = steps;
+					 LayerSegmentsTree*  newLayer = tree->CreateNewLayer(indexSelectVoxel);
 					 if (newLayer->segmentCount > (newLayer->down->segmentCount * 0.25))
 						 tree->step *= 2; 
 					 short^ c = tree->step;
@@ -679,27 +903,28 @@ namespace surface_reconstruction {
 				 else
 				 {
 
-					 tree2->step = step;
+					 treeGPU->step = step;
 
-					 LayerSegmentsTree2*  newLayer2 = tree2->CreateNewLayer();
-					 if (newLayer2->segmentCount > (newLayer2->down->segmentCount * 0.25))
-						 tree2->step *= 2; 
-					 short^ c = tree->step;
+					 LayerSegmentsTreeGPU*  newLayerGPU = treeGPU->CreateNewLayer();
+					 if (newLayerGPU->segmentCount > (newLayerGPU->down->segmentCount * 0.25))
+						 treeGPU->step *= 2; 
+					 short ts = treeGPU->step;
+					 short^ c = ts;
 					 StartStep->Text = c->ToString();
-					 LayerSegmentsTree2* layer2 = tree2->root;
+					 LayerSegmentsTreeGPU* layerGPU = treeGPU->root;
 					 int indexLayer = 0;
 					 LayerSegmentsGrid->RowCount = LayerSegmentsGrid->RowCount + 1;
 
-					 while (layer2 != 0)    
+					 while (layerGPU != 0)    
 					 {
 						 int^ c = indexLayer;                
 						 LayerSegmentsGrid->Rows[indexLayer]->Cells[0]->Value = c->ToString(); 
-						 unsigned int^ count = layer2->segmentCount;                 
+						 unsigned int^ count = layerGPU->segmentCount;                 
 						 LayerSegmentsGrid->Rows[indexLayer]->Cells[1]->Value = count->ToString(); 
-						 unsigned int^ w = layer2->maxCapacity;                 
+						 unsigned int^ w = layerGPU->maxCapacity;                 
 						 LayerSegmentsGrid->Rows[indexLayer]->Cells[2]->Value = w->ToString(); 
 						 indexLayer++;
-						 layer2 = layer2->up;
+						 layerGPU = layerGPU->up;
 					 }
 					 LayerSegmentsTreeInfo->Enabled = true;
 				 }
@@ -756,7 +981,7 @@ namespace surface_reconstruction {
 				 }
 				 else
 				 {
-					 LayerSegmentsTree2* layer2 = tree2->root;
+					 LayerSegmentsTreeGPU* layerGPU = treeGPU->root;
 					 int i = 0;
 
 					 String^ str = LayerSelect->Text;
@@ -765,33 +990,33 @@ namespace surface_reconstruction {
 					 for (int k = 0; k < str->Length; k++)
 						 s[k] = char(str[k]);
 					 int curent = atoi(s); 
-					 while (layer2 != 0)    
+					 while (layerGPU != 0)    
 					 {
 						 if (curent == i)
 						 {
-							 layerSelect2 = layer2;
+							 layerSelectGPU = layerGPU;
 							 break;
 						 }
 						 else
 						 {
-							 layer2 = layer2->up;
+							 layerGPU = layerGPU->up;
 							 i++;
 						 }
 					 }
 
-					 CurrentSegment->RowCount = layerSelect2->segmentCount + 2;
+					 CurrentSegment->RowCount = layerSelectGPU->segmentCount + 2;
 
-					 for (size_t j = 0; j < layerSelect2->segmentCount; j++)
+					 for (size_t j = 0; j < layerSelectGPU->segmentCount; j++)
 					 {
 						 unsigned int^ c = j;                
 						 CurrentSegment->Rows[j]->Cells[0]->Value = c->ToString(); 
-						 unsigned int^ count = layerSelect2->countVoxel[j];                 
+						 unsigned int^ count = layerSelectGPU->countVoxel[j];                 
 						 CurrentSegment->Rows[j]->Cells[1]->Value = count->ToString(); 
-						 short^ w0 = layerSelect2->minWeight[j];                 
+						 short^ w0 = layerSelectGPU->minWeight[j];                 
 						 CurrentSegment->Rows[j]->Cells[2]->Value = w0->ToString();
-						 short^ w1= short((layerSelect2->maxWeight[j] - layerSelect2->minWeight[j]) / 2);                 
+						 short^ w1= short((layerSelectGPU->maxWeight[j] - layerSelectGPU->minWeight[j]) / 2);                 
 						 CurrentSegment->Rows[j]->Cells[3]->Value = w1->ToString();
-						 short^ w2= layerSelect2->maxWeight[j];                 
+						 short^ w2= layerSelectGPU->maxWeight[j];                 
 						 CurrentSegment->Rows[j]->Cells[4]->Value = w2->ToString();
 
 					 }
@@ -800,35 +1025,67 @@ namespace surface_reconstruction {
 			 }
 
 	private: System::Void DisplaySegments_Click(System::Object^  sender, System::EventArgs^  e) {
-				 int countCheck = 0;
-				 for (int i = 0; i < layerSelect->segmentCount; i++)
+				 if (segmentationType == 0)
 				 {
-					 if (CurrentSegment->Rows[i]->Cells[5]->Value)
+					 size_t countCheck = 0;
+					 for (size_t i = 0; i < layerSelect->segmentCount; i++)
 					 {
-						 if (bool(CurrentSegment->Rows[i]->Cells[5]->Value) == true)
-							 countCheck++;
-					 }
-				 }
-				 int^ c = countCheck;  
-				 CountDisplay->Text = c->ToString();
-				 size_t* indexs = new size_t [countCheck];
-				 int k = 0;
-				 for (int i = 0; i < layerSelect->segmentCount; i++)
-				 {
-					 if (CurrentSegment->Rows[i]->Cells[5]->Value)
-					 {
-						 if (bool(CurrentSegment->Rows[i]->Cells[5]->Value) == true)
+						 if (CurrentSegment->Rows[i]->Cells[5]->Value)
 						 {
-							 indexs[k] = size_t(i);
-							 k++;
+							 if (bool(CurrentSegment->Rows[i]->Cells[5]->Value) == true)
+								 countCheck++;
 						 }
 					 }
-				 }
+					 unsigned int^ c = countCheck;  
+					 CountDisplay->Text = c->ToString();
+					 size_t* indexs = new size_t [countCheck];
+					 int k = 0;
+					 for (size_t i = 0; i < layerSelect->segmentCount; i++)
+					 {
+						 if (CurrentSegment->Rows[i]->Cells[5]->Value)
+						 {
+							 if (bool(CurrentSegment->Rows[i]->Cells[5]->Value) == true)
+							 {
+								 indexs[k] = size_t(i);
+								 k++;
+							 }
+						 }
+					 }
 
-				 if (segmentationType == 0)
+
 					 layerSelect->CreateData(indexs, size_t(countCheck), sd);
+				 }
 				 else
-					 layerSelect2->CreateData(indexs, size_t(countCheck), sd);
+				 {
+					 int countCheck = 0;
+					 for (size_t i = 0; i < layerSelectGPU->segmentCount; i++)
+					 {
+						 if (CurrentSegment->Rows[i]->Cells[5]->Value)
+						 {
+							 if (bool(CurrentSegment->Rows[i]->Cells[5]->Value) == true)
+								 countCheck++;
+						 }
+					 }
+					 int^ c = countCheck;  
+					 CountDisplay->Text = c->ToString();
+					 size_t* indexs = new size_t [countCheck];
+					 int k = 0;
+					 for (size_t i = 0; i < layerSelectGPU->segmentCount; i++)
+					 {
+						 if (CurrentSegment->Rows[i]->Cells[5]->Value)
+						 {
+							 if (bool(CurrentSegment->Rows[i]->Cells[5]->Value) == true)
+							 {
+								 indexs[k] = size_t(i);
+								 k++;
+							 }
+						 }
+					 }
+
+
+
+					 layerSelectGPU->CreateData(indexs, size_t(countCheck), sd);
+				 }
 				 DisplayData(sd);
 				 isDisplayInitialData = false;
 				 NewDataDisplay->Checked = true;
@@ -839,46 +1096,84 @@ namespace surface_reconstruction {
 			 }
 	private: System::Void CPU_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
 				 segmentationType = 0;
+				 MinVoxel->Enabled = true;
+				 MinVoxelLabel->Enabled = true;
 			 }
 	private: System::Void GPU_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
 				 segmentationType = 1;
+				 MinVoxel->Enabled = false;
+				 MinVoxelLabel->Enabled = false;
 			 }
 	private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e) {
-
-				 int countCheck = 0;
-				 for (int i = 0; i < layerSelect->segmentCount; i++)
+				 if (segmentationType == 0)
 				 {
-					 if (!CurrentSegment->Rows[i]->Cells[5]->Value)
+					 int countCheck = 0;
+					 for (size_t i = 0; i < layerSelect->segmentCount; i++)
 					 {
-						 countCheck++;						 
+						 if (!CurrentSegment->Rows[i]->Cells[5]->Value)
+						 {
+							 countCheck++;						 
+						 }
+						 else
+							 if (bool(CurrentSegment->Rows[i]->Cells[5]->Value) == false)
+								 countCheck++;
 					 }
-					 else
-						 if (bool(CurrentSegment->Rows[i]->Cells[5]->Value) == false)
-							 countCheck++;
-				 }
-				 int^ c = countCheck;  
-				 CountDisplay->Text = c->ToString();
-				 size_t* indexs = new size_t [countCheck];
-				 int k = 0;
-				 for (int i = 0; i < layerSelect->segmentCount; i++)
-				 {
-					 if (!CurrentSegment->Rows[i]->Cells[5]->Value)
+					 int^ c = countCheck;  
+					 CountDisplay->Text = c->ToString();
+					 size_t* indexs = new size_t [countCheck];
+					 int k = 0;
+					 for (size_t i = 0; i < layerSelect->segmentCount; i++)
 					 {
-						 indexs[k] = size_t(i);
-						 k++;
-					 }
-					 else
-						 if (bool(CurrentSegment->Rows[i]->Cells[5]->Value) == false)
+						 if (!CurrentSegment->Rows[i]->Cells[5]->Value)
 						 {
 							 indexs[k] = size_t(i);
 							 k++;
 						 }
+						 else
+							 if (bool(CurrentSegment->Rows[i]->Cells[5]->Value) == false)
+							 {
+								 indexs[k] = size_t(i);
+								 k++;
+							 }
 
-				 }
-				 if (segmentationType == 0)
+					 }
+
 					 layerSelect->CreateData(indexs, size_t(countCheck), sd);
+				 }
 				 else
-					 layerSelect2->CreateData(indexs, size_t(countCheck), sd);
+				 {
+					 int countCheck = 0;
+					 for (size_t i = 0; i < layerSelectGPU->segmentCount; i++)
+					 {
+						 if (!CurrentSegment->Rows[i]->Cells[5]->Value)
+						 {
+							 countCheck++;						 
+						 }
+						 else
+							 if (bool(CurrentSegment->Rows[i]->Cells[5]->Value) == false)
+								 countCheck++;
+					 }
+					 int^ c = countCheck;  
+					 CountDisplay->Text = c->ToString();
+					 size_t* indexs = new size_t [countCheck];
+					 int k = 0;
+					 for (size_t i = 0; i < layerSelectGPU->segmentCount; i++)
+					 {
+						 if (!CurrentSegment->Rows[i]->Cells[5]->Value)
+						 {
+							 indexs[k] = size_t(i);
+							 k++;
+						 }
+						 else
+							 if (bool(CurrentSegment->Rows[i]->Cells[5]->Value) == false)
+							 {
+								 indexs[k] = size_t(i);
+								 k++;
+							 }
+					 }
+
+					 layerSelectGPU->CreateData(indexs, size_t(countCheck), sd);
+				 }
 				 DisplayData(sd);
 				 isDisplayInitialData = false;
 				 NewDataDisplay->Checked = true;
@@ -948,18 +1243,18 @@ namespace surface_reconstruction {
 				 }
 				 else
 				 {
-					 if (tree2 != 0)
-						 if (tree2->root != 0)
+					 if (treeGPU != 0)
+						 if (treeGPU->root != 0)
 						 {
-							 LayerSegmentsTree2* layer2 = tree2->root;
-							 Voxel2* voxel = 0;
-							 while (layer2 != 0)    
+							 LayerSegmentsTreeGPU* layerGPU = treeGPU->root;
+							 VoxelGPU* voxel = 0;
+							 while (layerGPU != 0)    
 							 {
-								 for (size_t j = 0; j < layer2->segmentCount; j++)
+								 for (size_t j = 0; j < layerGPU->segmentCount; j++)
 								 {
 									 short maxw = 0;
 									 short minw = 0;
-									 voxel = &layer2->indexVoxel[layer2->startIndexVoxel[j]];
+									 voxel = &layerGPU->indexVoxel[layerGPU->startIndexVoxel[j]];
 									 while (voxel != 0)
 									 {
 										 if (data->data[voxel->index] > maxw)
@@ -969,28 +1264,28 @@ namespace surface_reconstruction {
 
 										 voxel = voxel->next;
 									 }
-									 layer2->maxWeight[j] = maxw;
-									 layer2->minWeight[j] = minw;
+									 layerGPU->maxWeight[j] = maxw;
+									 layerGPU->minWeight[j] = minw;
 
 								 }
-								 layer2 = layer2->up;
+								 layerGPU = layerGPU->up;
 							 }
 
-							 if (layerSelect2 != 0)
+							 if (layerSelectGPU != 0)
 							 {
-								 CurrentSegment->RowCount = layerSelect2->segmentCount + 2;
+								 CurrentSegment->RowCount = layerSelectGPU->segmentCount + 2;
 
-								 for (size_t j = 0; j < layerSelect2->segmentCount; j++)
+								 for (size_t j = 0; j < layerSelectGPU->segmentCount; j++)
 								 {
 									 unsigned int^ c = j;                
 									 CurrentSegment->Rows[j]->Cells[0]->Value = c->ToString(); 
-									 unsigned int^ count = layerSelect2->countVoxel[j];                 
+									 unsigned int^ count = layerSelectGPU->countVoxel[j];                 
 									 CurrentSegment->Rows[j]->Cells[1]->Value = count->ToString(); 
-									 short^ w0 = layerSelect2->minWeight[j];                 
+									 short^ w0 = layerSelectGPU->minWeight[j];                 
 									 CurrentSegment->Rows[j]->Cells[2]->Value = w0->ToString();
-									 short^ w1= short((layerSelect2->maxWeight[j] - layerSelect2->minWeight[j]) / 2);                 
+									 short^ w1= short((layerSelectGPU->maxWeight[j] - layerSelectGPU->minWeight[j]) / 2);                 
 									 CurrentSegment->Rows[j]->Cells[3]->Value = w1->ToString();
-									 short^ w2= layerSelect2->maxWeight[j];                 
+									 short^ w2= layerSelectGPU->maxWeight[j];                 
 									 CurrentSegment->Rows[j]->Cells[4]->Value = w2->ToString();
 
 								 }
@@ -1076,18 +1371,18 @@ namespace surface_reconstruction {
 				 }
 				 else
 				 {
-					 if (tree2 != 0)
-						 if (tree2->root != 0)
+					 if (treeGPU != 0)
+						 if (treeGPU->root != 0)
 						 {
-							 LayerSegmentsTree2* layer2 = tree2->root;
-							 Voxel2* voxel = 0;
-							 while (layer2 != 0)    
+							 LayerSegmentsTreeGPU* layerGPU = treeGPU->root;
+							 VoxelGPU* voxel = 0;
+							 while (layerGPU != 0)    
 							 {
-								 for (size_t j = 0; j < layer2->segmentCount; j++)
+								 for (size_t j = 0; j < layerGPU->segmentCount; j++)
 								 {
 									 short maxw = 0;
 									 short minw = 0;
-									 voxel = &layer2->indexVoxel[layer2->startIndexVoxel[j]];
+									 voxel = &layerGPU->indexVoxel[layerGPU->startIndexVoxel[j]];
 									 while (voxel != 0)
 									 {
 										 if (data->data[voxel->index] > maxw)
@@ -1097,28 +1392,28 @@ namespace surface_reconstruction {
 
 										 voxel = voxel->next;
 									 }
-									 layer2->maxWeight[j] = maxw;
-									 layer2->minWeight[j] = minw;
+									 layerGPU->maxWeight[j] = maxw;
+									 layerGPU->minWeight[j] = minw;
 
 								 }
-								 layer2 = layer2->up;
+								 layerGPU = layerGPU->up;
 							 }
 
-							 if (layerSelect2 != 0)
+							 if (layerSelectGPU != 0)
 							 {
-								 CurrentSegment->RowCount = layerSelect2->segmentCount + 2;
+								 CurrentSegment->RowCount = layerSelectGPU->segmentCount + 2;
 
-								 for (size_t j = 0; j < layerSelect2->segmentCount; j++)
+								 for (size_t j = 0; j < layerSelectGPU->segmentCount; j++)
 								 {
 									 unsigned int^ c = j;                
 									 CurrentSegment->Rows[j]->Cells[0]->Value = c->ToString(); 
-									 unsigned int^ count = layerSelect2->countVoxel[j];                 
+									 unsigned int^ count = layerSelectGPU->countVoxel[j];                 
 									 CurrentSegment->Rows[j]->Cells[1]->Value = count->ToString(); 
-									 short^ w0 = layerSelect2->minWeight[j];                 
+									 short^ w0 = layerSelectGPU->minWeight[j];                 
 									 CurrentSegment->Rows[j]->Cells[2]->Value = w0->ToString();
-									 short^ w1= short((layerSelect2->maxWeight[j] - layerSelect2->minWeight[j]) / 2);                 
+									 short^ w1= short((layerSelectGPU->maxWeight[j] - layerSelectGPU->minWeight[j]) / 2);                 
 									 CurrentSegment->Rows[j]->Cells[3]->Value = w1->ToString();
-									 short^ w2= layerSelect2->maxWeight[j];                 
+									 short^ w2= layerSelectGPU->maxWeight[j];                 
 									 CurrentSegment->Rows[j]->Cells[4]->Value = w2->ToString();
 
 								 }
@@ -1148,5 +1443,53 @@ namespace surface_reconstruction {
 			 }
 	private: System::Void CurrentSegment_CellContentClick(System::Object^  sender, System::Windows::Forms::DataGridViewCellEventArgs^  e) {
 			 }
-	};
+	private: System::Void UseCoordinateVoxel_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
+				 if (UseCoordinateVoxel->Checked)
+				 {
+					 x = Convert::ToUInt32(XTextBox->Text);
+					 y = Convert::ToUInt32(YTextBox->Text);
+					 z = Convert::ToUInt32(ZTextBox->Text);
+					 indexSelectVoxel = x + y * data->sizeX + z * data->sizeX * data->sizeY;
+				 }
+				 else
+				 {
+					 x = 0;
+					 y = 0;
+					 z = 0;
+					 indexSelectVoxel = 0;
+				 }
+			 }
+	private: System::Void XTextBox_TextChanged(System::Object^  sender, System::EventArgs^  e) {
+				 if (UseCoordinateVoxel->Checked)
+				 {
+					 x = Convert::ToUInt32(XTextBox->Text);
+					 indexSelectVoxel = x + y * data->sizeX + z * data->sizeX * data->sizeY;
+				 }
+			 }
+private: System::Void YTextBox_TextChanged(System::Object^  sender, System::EventArgs^  e) {
+			 if (UseCoordinateVoxel->Checked)
+			 {
+				 y = Convert::ToUInt32(YTextBox->Text);
+				 indexSelectVoxel = x + y * data->sizeX + z * data->sizeX * data->sizeY;
+			 }
+		 }
+private: System::Void ZTextBox_TextChanged(System::Object^  sender, System::EventArgs^  e) {
+			 if (UseCoordinateVoxel->Checked)
+			 {
+				 z = Convert::ToUInt32(ZTextBox->Text);
+				 indexSelectVoxel = x + y * data->sizeX + z * data->sizeX * data->sizeY;
+			 }
+		 }
+private: System::Void CheckConstStep_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
+			 isConstStep = CheckConstStep->Checked;
+		 }
+private: System::Void SelectStep_Click(System::Object^  sender, System::EventArgs^  e) {
+			 steps->Resize(size_t(StepsGrid->RowCount - 1));
+			 for (int i = 0; i < (StepsGrid->RowCount - 1); i++)
+			 {
+				 steps->border[i] = Convert::ToInt16(StepsGrid->Rows[i]->Cells[0]->Value);
+				 steps->steps[i] = Convert::ToInt16(StepsGrid->Rows[i]->Cells[1]->Value);
+			 }
+		 }
+};
 }
