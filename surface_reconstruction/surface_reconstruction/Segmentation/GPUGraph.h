@@ -4,34 +4,37 @@
 #include <iostream>
 
 
-class Voxel2
+class VoxelGPU
 {
 public:
 	size_t index;
-	Voxel2* next;
+	VoxelGPU* next;
 
-	Voxel2();
+	VoxelGPU();
+	~VoxelGPU();
 };
 
-class SegmentsTree2;
+class SegmentsTreeGPU;
 
-class LayerSegmentsTree2
+class LayerSegmentsTreeGPU
 {
 public:
 	size_t maxCapacity;//максимальное количество точек в сегментах
-	LayerSegmentsTree2* up;//вверх дерева
-	LayerSegmentsTree2* down;//вниз дерева
+	LayerSegmentsTreeGPU* up;//вверх дерева
+	LayerSegmentsTreeGPU* down;//вниз дерева
 	size_t segmentCount;//количество сегментов
-	SegmentsTree2* segmentsTree;//класс хранилище
+	SegmentsTreeGPU* segmentsTree;//класс хранилище
 
 	size_t* indexSegments;//индекс симплекса у вокселя
-	Voxel2* indexVoxel;//индексы входящих в сегменты вокселей
+	VoxelGPU* indexVoxel;//индексы входящих в сегменты вокселей
 	size_t* startIndexVoxel;//индекс начала вокселей сегментов в indexVoxel
 	size_t* countVoxel;//количество вокселей в сегментах
 	short* maxWeight;//вес сегмента(максимальное значение плотности)
 	short* minWeight;
 
-	LayerSegmentsTree2();
+	LayerSegmentsTreeGPU();
+	~LayerSegmentsTreeGPU();
+
 	void CreateData(size_t* index, size_t count, ScanData* data);
 
 
@@ -42,31 +45,32 @@ public:
 typedef void (funct)(char* str);
 
 //хранилище сегментов разных размеров
-class SegmentsTree2
+class SegmentsTreeGPU
 {
 public:
 	short maxValue;
 	size_t countLayer;//количество уровней
-	LayerSegmentsTree2* root;//корень
+	LayerSegmentsTreeGPU* root;//корень
 	ScanData* scanData; //указатель на исходные данные
 	short step;
 	size_t indexSegments;
 
 	//конструктор
-	SegmentsTree2();
-	SegmentsTree2(ScanData* data);
+	SegmentsTreeGPU();
+	SegmentsTreeGPU(ScanData* data);
+	~SegmentsTreeGPU();
 
 	//создать корень
 	void CreateRoot(ScanData* data);
 	//дать верхний слой
-	LayerSegmentsTree2* GetOldLayer();
+	LayerSegmentsTreeGPU* GetOldLayer();
 
-
-void Kernel(size_t sx, size_t sy, size_t sz, short* weightSegment, size_t* indexSegments, short* segmentAdjacents);
+	//последовательный аналог ядра
+	void Kernel(size_t sx, size_t sy, size_t sz, short* weightSegment, size_t* indexSegments, short* segmentAdjacents);
 
 
 	//создать новый слой
-	LayerSegmentsTree2* CreateNewLayer();
+	LayerSegmentsTreeGPU* CreateNewLayer();
 
 	////определить соседние сегменты
 	////void DeterminationAdjacents(LayerSegmentsTree* oldLayer, Segment* segmentCurrent, Segment** segmentAdjacents, 
