@@ -26,7 +26,7 @@ int ClusterizationInitGL(GLvoid) {
     glEnable(GL_LIGHT0);
 #endif
 
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     return TRUE;
 }
