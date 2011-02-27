@@ -66,8 +66,7 @@ Segment::~Segment()
 	minWeight = 0;
 	indexSegment = 0;
 	voxel = 0;
-	if (next != 0)
-		delete next;
+	next = 0;
 }
 
 SegmentStack::SegmentStack(size_t countSegment)
@@ -131,7 +130,22 @@ LayerSegmentsTree::~LayerSegmentsTree()
 	maxCapacity = 0;
 	segmentCount = 0;
 	segmentsTree = 0;
-	delete segment;
+	Segment* s = 0;
+	Segment* s2 = 0;
+	if (segment != 0)
+	{
+		s = segment->next;
+		s2 = segment;
+
+		delete segment;
+		s2 = s;
+		while (s != 0)
+		{
+			s = s2->next;
+			delete s2;
+			s2 = s;
+		}
+	}
 	delete [] allVoxel;
 	delete up;
 	down = 0;
@@ -235,37 +249,39 @@ void SegmentsTree::CreateRoot(ScanData* data)
 	scanData = data;
 	dimension = scanData->sizeX * scanData->sizeY * scanData->sizeZ; //êîëè÷åñòâî âîêñåëåé
 	root = new LayerSegmentsTree();
-	Segment* segments = new Segment [data->sizeX*data->sizeY*data->sizeZ];
 	root->allVoxel = new Voxel [data->sizeX*data->sizeY*data->sizeZ];
 
+	Segment* segment = new Segment();
+	Segment* oldSegment = segment;
 	root->allVoxel[0].index = 0;
 	root->allVoxel[0].next = 0;
-	root->allVoxel[0].segment = &segments[0];
+	root->allVoxel[0].segment = segment;
 
-	root->segment = &segments[0];
-	segments[0].voxel = &root->allVoxel[0];
-	segments[0].indexSegment = 0;
-	segments[0].maxWeight = data->data[0];
-	segments[0].minWeight = data->data[0];
-	segments[0].ñapacity = 1;
+	root->segment = segment;
+	segment->voxel = &root->allVoxel[0];
+	segment->indexSegment = 0;
+	segment->maxWeight = data->data[0];
+	segment->minWeight = data->data[0];
+	segment->ñapacity = 1;
 
 	for (size_t i = 1; i < data->sizeX*data->sizeY*data->sizeZ; i++)
 	{
-		segments[i - 1].next = &segments[i];
+		segment = new Segment();
+		oldSegment->next = segment;
 		root->allVoxel[i].index = i;
 		root->allVoxel[i].next = 0;
-		root->allVoxel[i].segment = &segments[i];
-		segments[i].voxel = &root->allVoxel[i];
-		segments[i].indexSegment = i;
-		segments[i].maxWeight = data->data[i];
-		segments[i].minWeight = data->data[i];
-		segments[i].ñapacity = 1;
-
+		root->allVoxel[i].segment = segment;
+		segment->voxel = &root->allVoxel[i];
+		segment->indexSegment = i;
+		segment->maxWeight = data->data[i];
+		segment->minWeight = data->data[i];
+		segment->ñapacity = 1;
+		oldSegment = segment;
 	}
 	countLayer++;     
 	root->segmentCount = data->sizeX*data->sizeY*data->sizeZ - 1;
 	root->maxCapacity = 1;
-	root->oldSegment = &segments[data->sizeX*data->sizeY*data->sizeZ - 1];
+	root->oldSegment = oldSegment;
 	root->down = 0;
 	root->up = 0;
 	root->segmentsTree = this;
